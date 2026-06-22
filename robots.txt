@@ -1,0 +1,47 @@
+User-agent: *
+Allow: /
+Allow: /index.php
+Allow: /register.php
+Allow: /courses.php
+Allow: /course.php
+Allow: /certificate_verify.php
+Allow: /instructor_register.php
+Allow: /assets/
+
+# Block private/auth pages
+Disallow: /dashboard.php
+Disallow: /admin_
+Disallow: /instructor_dashboard.php
+Disallow: /instructor_lessons.php
+Disallow: /instructor_videos.php
+Disallow: /instructor_assignments.php
+Disallow: /instructor_grade_assignment.php
+Disallow: /instructor_upload_
+Disallow: /instructor_live_sessions.php
+Disallow: /login.php
+Disallow: /login_handler.php
+Disallow: /logout.php
+Disallow: /pay.php
+Disallow: /pay_verify.php
+Disallow: /paystack_webhook.php
+Disallow: /profile.php
+Disallow: /payments.php
+Disallow: /certificate.php
+Disallow: /certificate_download.php
+Disallow: /lesson.php
+Disallow: /videos.php
+Disallow: /assignments.php
+Disallow: /assignment_submit.php
+Disallow: /exams.php
+Disallow: /take_exam.php
+Disallow: /ai_tutor.php
+Disallow: /live_session.php
+Disallow: /ajax_
+Disallow: /config/
+Disallow: /database/
+Disallow: /includes/
+Disallow: /logs/
+Disallow: /uploads/
+Disallow: /vendor/
+
+Sitemap: https://lms.mirrorageconcepts.com/sitemap.xml

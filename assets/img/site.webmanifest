@@ -1,0 +1,14 @@
+{
+  "name": "Grafix@Mirror LMS",
+  "short_name": "Mirror LMS",
+  "description": "Mirror Age Concepts — Professional Technology Training Institute",
+  "start_url": "/lms/dashboard.php",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#4f46e5",
+  "icons": [
+    { "src": "/lms/assets/img/favicon-32.png", "sizes": "32x32",   "type": "image/png" },
+    { "src": "/lms/assets/img/favicon-16.png", "sizes": "16x16",   "type": "image/png" },
+    { "src": "/lms/assets/img/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

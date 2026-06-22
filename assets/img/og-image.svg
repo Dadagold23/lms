@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="60%" style="stop-color:#1e1b4b"/>
+      <stop offset="100%" style="stop-color:#0c4a6e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Brand icon -->
+  <rect x="80" y="80" width="90" height="90" rx="20" fill="#4f46e5"/>
+  <text x="125" y="148" font-family="Arial,sans-serif" font-size="60" font-weight="800" text-anchor="middle" fill="#ffffff">G</text>
+  <!-- Brand name -->
+  <text x="200" y="130" font-family="Arial,sans-serif" font-size="42" font-weight="800" fill="#ffffff">Grafix<tspan fill="#a5b4fc">@Mirror</tspan> LMS</text>
+  <text x="200" y="175" font-family="Arial,sans-serif" font-size="22" fill="#94a3b8">Mirror Age Concepts — Professional Technology Training</text>
+  <!-- Tagline -->
+  <text x="80" y="340" font-family="Arial,sans-serif" font-size="56" font-weight="800" fill="#ffffff">Learn. Build.</text>
+  <text x="80" y="410" font-family="Arial,sans-serif" font-size="56" font-weight="800" fill="#a5b4fc">Get Certified.</text>
+  <text x="80" y="490" font-family="Arial,sans-serif" font-size="26" fill="#64748b">Data Science · AI · Web Dev · Cybersecurity · Cloud · and more</text>
+  <!-- URL -->
+  <text x="80" y="570" font-family="Arial,sans-serif" font-size="22" fill="#475569">lms.mirrorageconcepts.com</text>
+</svg>
