@@ -105,6 +105,15 @@ function courseUrl(array|string $course, bool $absolute = false): string
     return $absolute ? '/' . $url : $url;
 }
 
+function appBaseUrl(): string
+{
+    $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+    if ($base === '/') {
+        return '/';
+    }
+    return rtrim($base, '/') . '/';
+}
+
 function isPost(): bool
 {
     return isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST';

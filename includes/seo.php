@@ -56,6 +56,7 @@ $_faviconBase = $_basePath !== '' ? $_basePath : '';
 $_cookieConsentToken = session_status() === PHP_SESSION_ACTIVE ? csrfToken() : '';
 $_hasCookieConsent = isset($_COOKIE['lms_cookie_consent']);
 ?>
+<base href="<?= e(appBaseUrl()) ?>">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
