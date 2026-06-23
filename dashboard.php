@@ -118,7 +118,7 @@ require_once __DIR__ . '/includes/seo.php';
     </button>
     <div class="sidebar-courses" id="myCoursesList" role="region">
       <?php foreach ($myCourses as $c): ?>
-        <a href="course.php?id=<?= (int)$c['id'] ?>" class="sidebar-course-item">
+        <a href="<?= e(courseUrl($c)) ?>" class="sidebar-course-item">
           <i class="fa fa-circle" style="color:var(--brand)"></i><?= e($c['title']) ?>
         </a>
       <?php endforeach; ?>
@@ -134,7 +134,7 @@ require_once __DIR__ . '/includes/seo.php';
     </button>
     <div class="sidebar-courses" id="availList" role="region">
       <?php foreach ($availableCourses as $c): ?>
-        <a href="course.php?id=<?= (int)$c['id'] ?>" class="sidebar-course-item">
+        <a href="<?= e(courseUrl($c)) ?>" class="sidebar-course-item">
           <i class="fa fa-circle" style="color:var(--success)"></i><?= e($c['title']) ?>
         </a>
       <?php endforeach; ?>
@@ -299,13 +299,13 @@ require_once __DIR__ . '/includes/seo.php';
           $badge  = '<span class="badge-success">Unlocked ✓</span>';
           $action = '<div class="d-grid gap-2">'
                   . '<a class="btn-brand w-100 justify-content-center d-flex" href="' . e(workspaceLaunchUrl($c)) . '"><i class="fa ' . e(workspaceTypeIcon($c)) . ' me-1"></i>Launch ' . e(workspaceTypeLabel($c)) . '</a>'
-                  . '<a class="btn-ghost w-100 text-center d-block" href="course.php?id='.(int)$c['id'].'">Course Details</a>'
+                  . '<a class="btn-ghost w-100 text-center d-block" href="' . e(courseUrl(['id' => $cid, 'slug' => $c['slug'] ?? ''])) . '">View Course →</a>'
                   . '</div>';
         } elseif ($ptype === 'installment' && $paid > 0 && !$installmentDue) {
           $badge  = '<span class="badge-success">Active on Installment</span>';
           $action = '<div class="d-grid gap-2">'
                   . '<a class="btn-brand w-100 justify-content-center d-flex" href="' . e(workspaceLaunchUrl($c)) . '"><i class="fa ' . e(workspaceTypeIcon($c)) . ' me-1"></i>Launch ' . e(workspaceTypeLabel($c)) . '</a>'
-                  . '<a class="btn-ghost w-100 text-center d-block" href="pay.php?enrollment_id='.(int)$c['enrollment_id'].'">Pay Balance Later</a>'
+                  . '<a class="btn-ghost w-100 text-center d-block" href="' . e(courseUrl(['id' => $cid, 'slug' => $c['slug'] ?? ''])) . '">View Course →</a>'
                   . '</div>';
         } elseif ($ptype === 'installment' && $installmentDue) {
           $badge  = '<span class="badge-danger">2nd Payment Due</span>';

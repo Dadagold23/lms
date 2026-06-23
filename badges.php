@@ -334,7 +334,7 @@ require_once __DIR__ . '/includes/seo.php';
               <div class="text-muted small mb-3">
                 <i class="fa fa-lock me-1"></i>Locked
               </div>
-              <a href="course.php?id=<?= (int)$b['course_id'] ?>" class="btn-outline-brand w-100 justify-content-center d-flex align-items-center gap-2">
+              <a href="<?= e(courseUrl(['id' => (int)$b['course_id'], 'slug' => ''])) ?>" class="btn-outline-brand w-100 justify-content-center d-flex align-items-center gap-2">
                 Go to Course <i class="fa fa-arrow-right"></i>
               </a>
             <?php endif; ?>

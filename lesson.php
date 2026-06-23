@@ -39,7 +39,7 @@ if (!$enrollment) { http_response_code(403); exit('Access denied: not enrolled i
 $access = enrollmentAccessState($enrollment);
 $isUnlocked = (bool)$access['is_unlocked'];
 
-if (!$isUnlocked) redirect('course.php?id=' . $courseId);
+if (!$isUnlocked) redirect(courseUrl($enrollment));
 
 /* ── All lessons ordered for this course ── */
 $allLessons = $pdo->prepare("SELECT id, title FROM lms_lessons WHERE course_id=? AND is_published=1 ORDER BY sort_order ASC, id ASC");
@@ -238,7 +238,7 @@ require_once __DIR__ . '/includes/seo.php';
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb" style="font-size:.82rem">
       <li class="breadcrumb-item"><a href="dashboard.php">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="course.php?id=<?= $courseId ?>"><?= e($courseTitle) ?></a></li>
+      <li class="breadcrumb-item"><a href="<?= e(courseUrl($enrollment)) ?>"><?= e($courseTitle) ?></a></li>
       <li class="breadcrumb-item active" aria-current="page"><?= e($title) ?></li>
     </ol>
   </nav>

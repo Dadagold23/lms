@@ -49,7 +49,7 @@ $isExpired = !empty($course['access_expires_at']) && strtotime((string)$course['
 $isUnlocked = !$isExpired && ($status === 'paid' || ($status === 'installment' && $paid > 0) || ($price > 0 && $paid >= $price));
 
 if (!$isUnlocked) {
-    redirect('course.php?id=' . $courseId);
+    redirect(courseUrl($course));
 }
 
 $workspaceType = inferWorkspaceType($course);

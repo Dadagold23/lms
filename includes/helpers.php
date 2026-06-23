@@ -15,7 +15,17 @@ function e($value): string
 
 function redirect(string $url): void
 {
-    header("Location: {$url}");
+    if ($url === '') {
+        $url = 'index.php';
+    }
+    // If the URL is already absolute or root-relative, redirect directly
+    if (preg_match('~^(https?:)?//~i', $url) || strpos($url, '/') === 0) {
+        header("Location: {$url}");
+    } else {
+        $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        $base = rtrim($base, '/');
+        header("Location: {$base}/{$url}");
+    }
     exit;
 }
 
@@ -64,6 +74,35 @@ function formatMoney($amount): string
         return '₦0.00';
     }
     return '₦' . number_format((float)$amount, 2);
+}
+
+/**
+ * Generate a clean, slug-based URL for a course page.
+ * Accepts a course array (with 'slug' and/or 'id' keys) or a plain slug string.
+ * Falls back to ?id= style if no slug is available.
+ *
+ * Usage:
+ *   courseUrl($course)               → course/web-development-bootcamp
+ *   courseUrl('web-development')     → course/web-development
+ *   courseUrl($course, true)         → /course/web-development-bootcamp  (absolute path)
+ */
+function courseUrl(array|string $course, bool $absolute = false): string
+{
+    if (is_string($course)) {
+        $slug = trim($course);
+        $url  = $slug !== '' ? 'course/' . rawurlencode($slug) : 'course.php';
+    } else {
+        $slug = trim((string)($course['slug'] ?? ''));
+        $id   = (int)($course['id'] ?? 0);
+        if ($slug !== '') {
+            $url = 'course/' . rawurlencode($slug);
+        } elseif ($id > 0) {
+            $url = 'course.php?id=' . $id;
+        } else {
+            $url = 'course.php';
+        }
+    }
+    return $absolute ? '/' . $url : $url;
 }
 
 function isPost(): bool

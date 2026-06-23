@@ -19,6 +19,18 @@ ServerSignature Off
     # Redirect www → non-www (lms subdomain — keep as-is)
     RewriteCond %{HTTP_HOST} ^www\.lms\.mirrorageconcepts\.com$ [NC]
     RewriteRule ^ https://lms.mirrorageconcepts.com%{REQUEST_URI} [R=301,L]
+
+    # ── Clean URL: /course/{slug} → course.php?slug={slug} ────────
+    # Must come AFTER real-file check so existing .php files still work
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^course/([a-z0-9][a-z0-9\-]*)/?$ course.php?slug=$1 [QSA,L]
+
+    # ── Short aliases for static public pages ─────────────────────
+    RewriteRule ^about/?$   about_us.php   [QSA,L]
+    RewriteRule ^faqs/?$    faqs.php       [QSA,L]
+    RewriteRule ^help/?$    help.php       [QSA,L]
+    RewriteRule ^contact/?$ contact_us.php [QSA,L]
 </IfModule>
 
 # ── Security: Block sensitive files ──────────────────────────

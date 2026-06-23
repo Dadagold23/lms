@@ -10,25 +10,44 @@ require_once __DIR__ . '/config/db.php';
 requireLogin();
 
 $studentId = (int)($_SESSION['user']['id'] ?? 0);
-$courseId  = (int)($_GET['id'] ?? 0);
 if ($studentId <= 0) redirect('login.php');
-if ($courseId <= 0) { http_response_code(400); exit('Invalid course.'); }
+
+/* ── Resolve course by slug (clean URL) or legacy ?id= ── */
+$slugParam = trim((string)($_GET['slug'] ?? ''));
+$idParam   = (int)($_GET['id'] ?? 0);
+
+if ($slugParam !== '') {
+    // Clean URL: /course/{slug}
+    $courseId = 0; // resolved below after fetch
+} elseif ($idParam > 0) {
+    $courseId = $idParam;
+} else {
+    http_response_code(400); exit('Invalid course.');
+}
 
 /* ── Course ── */
 $courseSql = "SELECT id,title,slug,description,short_description,price,level,intro_video"
     . workspaceCourseSelectSql($pdo)
-    . " FROM lms_courses WHERE id=? LIMIT 1";
+    . ($slugParam !== ''
+        ? " FROM lms_courses WHERE slug=? LIMIT 1"
+        : " FROM lms_courses WHERE id=? LIMIT 1");
 try {
     $stmt = $pdo->prepare($courseSql);
-    $stmt->execute([$courseId]);
+    $stmt->execute([$slugParam !== '' ? $slugParam : $courseId]);
     $course = (array)($stmt->fetch(PDO::FETCH_ASSOC) ?: []);
 } catch (PDOException $e) {
-    $stmt = $pdo->prepare("SELECT id,title,slug,description,short_description,price,level,intro_video FROM lms_courses WHERE id=? LIMIT 1");
-    $stmt->execute([$courseId]);
+    $fallbackSql = $slugParam !== ''
+        ? "SELECT id,title,slug,description,short_description,price,level,intro_video FROM lms_courses WHERE slug=? LIMIT 1"
+        : "SELECT id,title,slug,description,short_description,price,level,intro_video FROM lms_courses WHERE id=? LIMIT 1";
+    $stmt = $pdo->prepare($fallbackSql);
+    $stmt->execute([$slugParam !== '' ? $slugParam : $courseId]);
     $course = (array)($stmt->fetch(PDO::FETCH_ASSOC) ?: []);
 }
 $course = workspaceCourseRow($course);
 if (!$course) { http_response_code(404); exit('Course not found.'); }
+
+// Normalise courseId — needed for enrollment queries below
+$courseId = (int)$course['id'];
 
 $price = (float)($course['price'] ?? 0);
 

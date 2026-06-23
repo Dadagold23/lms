@@ -29,7 +29,7 @@ if (!$row) { http_response_code(403); exit('You are not enrolled in this course.
 $access = enrollmentAccessState($row);
 $isUnlocked = (bool)$access['is_unlocked'];
 
-if (!$isUnlocked) redirect('course.php?id=' . $courseId);
+if (!$isUnlocked) redirect(courseUrl($row));
 
 /* ── Lessons for THIS course only ── */
 $lessons = $pdo->prepare("

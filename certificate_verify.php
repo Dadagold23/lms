@@ -350,7 +350,7 @@ $qrImg      = 'https://chart.googleapis.com/chart?chs=140x140&cht=qr&chld=M|0&ch
 
     <!-- Portal Action -->
     <div class="d-grid">
-      <a href="course.php?id=<?= (int)$row['course_id'] ?>" class="btn-action btn-secondary-option" style="border-color: rgba(227,193,98,0.2); color:var(--brand)">
+      <a href="<?= e(courseUrl(['id' => (int)$row['course_id'], 'slug' => ''])) ?>" class="btn-action btn-secondary-option" style="border-color: rgba(227,193,98,0.2); color:var(--brand)">
         <i class="fa fa-graduation-cap"></i> Explore Grafix@Mirror LMS
       </a>
     </div>

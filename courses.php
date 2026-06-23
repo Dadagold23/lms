@@ -164,7 +164,7 @@ require_once __DIR__ . '/includes/seo.php';
                 <button type="submit" class="btn btn-primary btn-sm">Enroll Now</button>
               </form>
               
-              <a href="course.php?id=<?= $courseId ?>" class="btn btn-outline-secondary btn-sm">
+              <a href="<?= e(courseUrl($c)) ?>" class="btn btn-outline-secondary btn-sm">
                 View Details
               </a>
             </div>

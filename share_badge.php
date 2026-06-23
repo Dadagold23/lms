@@ -422,7 +422,7 @@ SVG;
             <i class="fa fa-certificate me-1"></i> Verify Official Certificate
           </a>
         <?php endif; ?>
-        <a href="course.php?id=<?= (int)$badge['course_id'] ?>" class="btn-action btn-brand-outline text-decoration-none text-center">
+        <a href="<?= e(courseUrl(['id' => (int)$badge['course_id'], 'slug' => (string)($badge['course_slug'] ?? '')])) ?>" class="btn-action btn-brand-outline text-decoration-none text-center">
           <i class="fa fa-graduation-cap me-1"></i> Explore This Course
         </a>
       </div>
