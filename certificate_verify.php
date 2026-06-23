@@ -17,7 +17,7 @@ if ($code === '') {
 $stmt = $pdo->prepare("
     SELECT c.certificate_code, c.issued_at,
            s.first_name, s.last_name, s.email,
-           crs.id AS course_id, crs.title AS course_title
+           crs.id AS course_id, crs.title AS course_title, crs.slug AS course_slug
     FROM lms_certificates c
     JOIN lms_students s ON s.id = c.student_id
     JOIN lms_courses crs ON crs.id = c.course_id
@@ -350,7 +350,7 @@ $qrImg      = 'https://chart.googleapis.com/chart?chs=140x140&cht=qr&chld=M|0&ch
 
     <!-- Portal Action -->
     <div class="d-grid">
-      <a href="<?= e(courseUrl(['id' => (int)$row['course_id'], 'slug' => ''])) ?>" class="btn-action btn-secondary-option" style="border-color: rgba(227,193,98,0.2); color:var(--brand)">
+      <a href="<?= e(courseUrl(['id' => (int)$row['course_id'], 'slug' => (string)($row['course_slug'] ?? '')])) ?>" class="btn-action btn-secondary-option" style="border-color: rgba(227,193,98,0.2); color:var(--brand)">
         <i class="fa fa-graduation-cap"></i> Explore Grafix@Mirror LMS
       </a>
     </div>

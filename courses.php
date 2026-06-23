@@ -21,7 +21,7 @@ requireLogin();
    FETCH COURSES
 ====================== */
 $stmt = $pdo->query("
-    SELECT id, title, description, price, intro_video, created_at
+    SELECT id, title, slug, description, price, intro_video, created_at
     FROM lms_courses
     ORDER BY id DESC
 ");

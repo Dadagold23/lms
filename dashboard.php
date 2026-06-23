@@ -24,7 +24,7 @@ $name = trim(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? ''
 
 /* ── Enrolled courses (with enrollment + payment info) ── */
 $stmt = $pdo->prepare("
-    SELECT c.id, c.title, c.price, c.level, c.intro_video" . workspaceCourseSelectSql($pdo, 'c') . ",
+    SELECT c.id, c.title, c.slug, c.price, c.level, c.intro_video" . workspaceCourseSelectSql($pdo, 'c') . ",
            e.id AS enrollment_id, e.paid_amount, e.payment_type,
            e.status AS enroll_status, e.next_due_date, e.access_expires_at
     FROM lms_courses c
@@ -37,7 +37,7 @@ $myCourses = $stmt->fetchAll();
 
 /* ── Available courses (not enrolled) ── */
 $stmt = $pdo->prepare("
-    SELECT c.id, c.title, c.price, c.level, c.short_description
+    SELECT c.id, c.title, c.slug, c.price, c.level, c.short_description
     FROM lms_courses c
     WHERE c.is_active = 1
       AND c.id NOT IN (SELECT course_id FROM lms_enrollments WHERE student_id = ?)

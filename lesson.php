@@ -25,7 +25,7 @@ $courseId = (int)$lesson['course_id'];
 
 /* ── Enrollment + access check ── */
 $en = $pdo->prepare("
-    SELECT e.paid_amount, e.status, e.access_expires_at, e.payment_type, e.next_due_date, e.created_at, c.price, c.title AS course_title" . workspaceCourseSelectSql($pdo, 'c') . "
+    SELECT e.paid_amount, e.status, e.access_expires_at, e.payment_type, e.next_due_date, e.created_at, c.price, c.title AS course_title, c.slug" . workspaceCourseSelectSql($pdo, 'c') . "
     FROM lms_enrollments e
     JOIN lms_courses c ON c.id = e.course_id
     WHERE e.student_id=? AND e.course_id=?

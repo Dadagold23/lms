@@ -29,6 +29,7 @@ $badgesStmt = $pdo->prepare("
         b.icon_class,
         c.id AS course_id,
         c.title AS course_title,
+        c.slug AS course_slug,
         c.level AS course_level,
         sb.share_token,
         sb.earned_at
@@ -334,7 +335,7 @@ require_once __DIR__ . '/includes/seo.php';
               <div class="text-muted small mb-3">
                 <i class="fa fa-lock me-1"></i>Locked
               </div>
-              <a href="<?= e(courseUrl(['id' => (int)$b['course_id'], 'slug' => ''])) ?>" class="btn-outline-brand w-100 justify-content-center d-flex align-items-center gap-2">
+              <a href="<?= e(courseUrl(['id' => (int)$b['course_id'], 'slug' => (string)($b['course_slug'] ?? '')])) ?>" class="btn-outline-brand w-100 justify-content-center d-flex align-items-center gap-2">
                 Go to Course <i class="fa fa-arrow-right"></i>
               </a>
             <?php endif; ?>
