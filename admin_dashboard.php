@@ -101,6 +101,7 @@ require_once __DIR__ . '/includes/seo.php';
     <a href="reminders.php" class="nav-link"><i class="fa fa-bell"></i> Reminders</a>
     <a href="whatsapp_messages.php" class="nav-link"><i class="fab fa-whatsapp"></i> Messages</a>
     <a href="create_admin.php" class="nav-link"><i class="fa fa-user-plus"></i> Create Admin</a>
+    <a href="admin_change_password.php" class="nav-link"><i class="fa fa-key"></i> Change Password</a>
     <div class="nav-section">Portal</div>
     <a href="admin_logout.php" class="nav-link" style="color:var(--danger)"><i class="fa fa-sign-out-alt"></i> Logout</a>
   </aside>
