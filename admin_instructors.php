@@ -8,6 +8,8 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/mail.php';
+require_once __DIR__ . '/includes/email_templates.php';
 
 requireAdminLogin();
 $admin = $_SESSION['admin'];
@@ -15,6 +17,13 @@ $admin = $_SESSION['admin'];
 $flashSuccess = $_SESSION['admin_ins_success'] ?? null;
 $flashError = $_SESSION['admin_ins_error'] ?? null;
 unset($_SESSION['admin_ins_success'], $_SESSION['admin_ins_error']);
+
+// Layout View Selection (Grid vs List)
+$layout = $_GET['layout'] ?? $_SESSION['admin_ins_layout'] ?? 'grid';
+if (isset($_GET['layout']) && in_array($_GET['layout'], ['grid', 'list'], true)) {
+    $_SESSION['admin_ins_layout'] = $_GET['layout'];
+    $layout = $_GET['layout'];
+}
 
 // ─── Actions Handler ───
 if (isPost()) {
@@ -57,7 +66,15 @@ if (isPost()) {
                 $fullName, $email, $phone ?: null, $hash, $bio ?: null, $specialization, $qualification ?: null, $experienceYrs, $linkedinUrl ?: null
             ]);
 
-            $_SESSION['admin_ins_success'] = 'Instructor registered successfully.';
+            // Send registration email with login credentials
+            $mailContent = emailInstructorWelcome($fullName, $email, $password);
+            $mailSent = send_mail($email, 'Your Instructor Account — Grafix@Mirror LMS', $mailContent);
+            
+            if ($mailSent) {
+                $_SESSION['admin_ins_success'] = 'Instructor registered successfully. Credentials welcome email sent.';
+            } else {
+                $_SESSION['admin_ins_success'] = 'Instructor registered successfully (Welcome email failed to send, please check SMTP configuration).';
+            }
         } catch (Throwable $e) {
             $_SESSION['admin_ins_error'] = 'Failed to register instructor: ' . $e->getMessage();
         }
@@ -345,9 +362,28 @@ require_once __DIR__ . '/includes/seo.php';
       <h3 class="fw-bold mb-0">Instructors Management</h3>
       <p class="text-muted small mb-0">Monitor instructor profiles, status, availability, and course metrics.</p>
     </div>
-    <button class="btn btn-primary d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalRegister">
-      <i class="fa fa-user-plus"></i> Register Instructor
-    </button>
+    <div class="d-flex align-items-center gap-2">
+      <?php
+      $queryGrid = $_GET;
+      $queryGrid['layout'] = 'grid';
+      $urlGrid = 'admin_instructors.php?' . http_build_query($queryGrid);
+
+      $queryList = $_GET;
+      $queryList['layout'] = 'list';
+      $urlList = 'admin_instructors.php?' . http_build_query($queryList);
+      ?>
+      <div class="btn-group me-2" role="group" aria-label="Layout View">
+        <a href="<?= e($urlGrid) ?>" class="btn btn-outline-indigo btn-sm <?= $layout === 'grid' ? 'active' : '' ?>" title="Grid View" style="padding: 0.375rem 0.75rem;">
+          <i class="fa fa-th"></i> Grid
+        </a>
+        <a href="<?= e($urlList) ?>" class="btn btn-outline-indigo btn-sm <?= $layout === 'list' ? 'active' : '' ?>" title="List View" style="padding: 0.375rem 0.75rem;">
+          <i class="fa fa-list"></i> List
+        </a>
+      </div>
+      <button class="btn btn-primary d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modalRegister">
+        <i class="fa fa-user-plus"></i> Register Instructor
+      </button>
+    </div>
   </div>
 
   <!-- SEARCH & FILTER BAR -->
@@ -381,7 +417,7 @@ require_once __DIR__ . '/includes/seo.php';
     </form>
   </div>
 
-  <!-- INSTRUCTOR LIST GRID -->
+  <!-- INSTRUCTOR LIST LAYOUT -->
   <?php if (empty($instructors)): ?>
     <div class="card p-5 text-center shadow-sm">
       <div class="text-muted mb-2"><i class="fa fa-users fa-3x"></i></div>
@@ -389,243 +425,349 @@ require_once __DIR__ . '/includes/seo.php';
       <p class="text-muted small">Try modifying search tags or registering a new instructor.</p>
     </div>
   <?php else: ?>
-    <div class="row g-4">
-      <?php foreach ($instructors as $i):
-        $insId = (int)$i['id'];
-        $insCourses = $assignedMap[$insId] ?? [];
-        $initials = '';
-        if (!empty($i['full_name'])) {
-            $words = explode(' ', $i['full_name']);
-            $initials = strtoupper(substr($words[0] ?? '', 0, 1) . (isset($words[1]) ? substr($words[1], 0, 1) : ''));
-        }
-        
-        $subGraded = (int)$i['graded_submissions'];
-        $subTotal = (int)$i['total_submissions'];
-        $percentGraded = $subTotal > 0 ? (int)round(($subGraded / $subTotal) * 100) : 0;
-        
-        // Availability formatting
-        $avail = (string)($i['availability_status'] ?? 'available');
-        $availText = match($avail) {
-          'busy' => 'Busy',
-          'leave' => 'On Leave',
-          default => 'Available'
-        };
-        $availBadge = match($avail) {
-          'busy' => 'badge-avail-busy',
-          'leave' => 'badge-avail-leave',
-          default => 'badge-avail-available'
-        };
-
-        // Status badge
-        $st = (string)($i['status'] ?? 'active');
-        $statusBadge = match($st) {
-          'active' => 'badge-success',
-          'suspended' => 'badge-danger',
-          default => 'badge-warning'
-        };
-      ?>
-        <div class="col-lg-6">
-          <div class="card-instructor p-4 h-100">
-            <div class="d-flex align-items-start gap-3">
-              <!-- Avatar -->
-              <div class="avatar-wrap">
-                <?php if (!empty($i['photo'])): ?>
-                  <img src="uploads/<?= e($i['photo']) ?>" alt="<?= e($i['full_name']) ?>" class="avatar-img">
-                <?php else: ?>
-                  <div class="avatar-placeholder"><?= $initials ?></div>
-                <?php endif; ?>
-                <span class="badge-avail <?= $availBadge ?>" title="Status: <?= $availText ?>"></span>
-              </div>
-
-              <!-- General Info -->
-              <div class="flex-grow-1 min-w-0">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
-                  <h5 class="fw-bold mb-0 text-truncate" style="max-width:180px;"><?= e($i['full_name']) ?></h5>
-                  <span class="badge <?= $statusBadge ?>"><?= ucfirst($st) ?></span>
-                </div>
-                <div class="text-indigo-600 fw-semibold small mb-1"><?= e($i['specialization']) ?></div>
-                <div class="text-muted small mb-2"><i class="fa fa-envelope me-1"></i><?= e($i['email']) ?></div>
-                <div class="text-muted small"><i class="fa fa-phone me-1"></i><?= e($i['phone'] ?? 'No phone added') ?></div>
-              </div>
-            </div>
-
-            <hr class="my-3 text-muted" style="opacity:0.15;">
-
-            <!-- Performance Metrics -->
-            <div class="row g-2 text-center mb-3">
-              <div class="col-4">
-                <div class="metric-label">Courses</div>
-                <div class="metric-val"><?= (int)$i['course_count'] ?></div>
-              </div>
-              <div class="col-4">
-                <div class="metric-label">Lessons</div>
-                <div class="metric-val"><?= (int)$i['lesson_count'] ?></div>
-              </div>
-              <div class="col-4">
-                <div class="metric-label">Graded</div>
-                <div class="metric-val"><?= $subGraded ?> / <?= $subTotal ?></div>
-              </div>
-            </div>
-
-            <!-- Grading Performance Bar -->
-            <div class="mb-3">
-              <div class="d-flex justify-content-between small text-muted mb-1">
-                <span>Grading Completion Rate</span>
-                <span class="fw-bold text-dark"><?= $percentGraded ?>%</span>
-              </div>
-              <div class="progress" style="height: 6px;">
-                <div class="progress-bar bg-indigo" role="progressbar" style="width: <?= $percentGraded ?>%; background-color: var(--brand);" aria-valuenow="<?= $percentGraded ?>" aria-valuemin="0" aria-valuemax="100"></div>
-              </div>
-            </div>
-
-            <!-- Assigned Courses Section -->
-            <div class="mb-3">
-              <div class="small fw-semibold text-dark mb-1">Assigned Courses:</div>
-              <div class="d-flex flex-wrap align-items-center">
-                <?php if (empty($insCourses)): ?>
-                  <span class="text-muted small italic">No courses assigned yet.</span>
-                <?php else: ?>
-                  <?php foreach ($insCourses as $c): ?>
-                    <span class="course-pill">
-                      <?= e($c['title']) ?>
-                      <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Remove course assignment?')">
+    <?php if ($layout === 'list'): ?>
+      <!-- LIST VIEW -->
+      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: 12px;">
+        <div class="table-responsive">
+          <table class="table align-middle mb-0 table-hover">
+            <thead class="table-light">
+              <tr>
+                <th style="padding-left: 20px;">Instructor</th>
+                <th>Specialization</th>
+                <th>Contact Info</th>
+                <th>Courses</th>
+                <th>Availability</th>
+                <th>Status</th>
+                <th class="text-end" style="padding-right: 20px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($instructors as $i):
+                $insId = (int)$i['id'];
+                $insCourses = $assignedMap[$insId] ?? [];
+                $initials = '';
+                if (!empty($i['full_name'])) {
+                    $words = explode(' ', $i['full_name']);
+                    $initials = strtoupper(substr($words[0] ?? '', 0, 1) . (isset($words[1]) ? substr($words[1], 0, 1) : ''));
+                }
+                
+                $avail = (string)($i['availability_status'] ?? 'available');
+                $st = (string)($i['status'] ?? 'active');
+              ?>
+                <tr>
+                  <td style="padding-left: 20px;">
+                    <div class="d-flex align-items-center gap-3">
+                      <?php if (!empty($i['photo'])): ?>
+                        <img src="uploads/<?= e($i['photo']) ?>" alt="<?= e($i['full_name']) ?>" class="rounded-circle" style="width: 44px; height: 44px; object-fit: cover;">
+                      <?php else: ?>
+                        <div class="rounded-circle bg-light text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; font-size: 1rem; border: 1px solid #e2e8f0; min-width: 44px;">
+                          <?= $initials ?>
+                        </div>
+                      <?php endif; ?>
+                      <div>
+                        <div class="fw-bold text-dark"><?= e($i['full_name']) ?></div>
+                        <div class="text-muted small">Joined <?= date('M Y', strtotime($i['created_at'])) ?></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="text-indigo-600 fw-semibold small"><?= e($i['specialization']) ?></span>
+                  </td>
+                  <td>
+                    <div class="small text-dark"><i class="fa fa-envelope text-muted me-1"></i><?= e($i['email']) ?></div>
+                    <div class="small text-muted"><i class="fa fa-phone text-muted me-1"></i><?= e($i['phone'] ?? 'N/A') ?></div>
+                  </td>
+                  <td>
+                    <span class="badge bg-indigo-100 text-indigo-800 rounded-pill px-2.5 py-1 fw-bold"><?= (int)$i['course_count'] ?> courses</span>
+                  </td>
+                  <td>
+                    <?php if ($avail === 'available'): ?>
+                      <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1"><i class="fa fa-check-circle me-1"></i>Available</span>
+                    <?php elseif ($avail === 'busy'): ?>
+                      <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1"><i class="fa fa-clock me-1"></i>Busy</span>
+                    <?php else: ?>
+                      <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3 py-1"><i class="fa fa-plane me-1"></i>On Leave</span>
+                    <?php endif; ?>
+                  </td>
+                  <td>
+                    <?php if ($st === 'active'): ?>
+                      <span class="badge bg-success rounded-pill px-2.5 py-1">Active</span>
+                    <?php elseif ($st === 'suspended'): ?>
+                      <span class="badge bg-danger rounded-pill px-2.5 py-1">Suspended</span>
+                    <?php else: ?>
+                      <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1">Pending</span>
+                    <?php endif; ?>
+                  </td>
+                  <td class="text-end" style="padding-right: 20px;">
+                    <div class="d-flex justify-content-end gap-1">
+                      <a href="admin_instructor_detail.php?id=<?= $insId ?>" class="btn btn-outline-info btn-sm" title="View Performance"><i class="fa fa-chart-line"></i> Performance</a>
+                      <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalEdit<?= $insId ?>" title="Edit"><i class="fa fa-edit"></i></button>
+                      <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAssign<?= $insId ?>" title="Assign Course"><i class="fa fa-plus"></i></button>
+                      <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this instructor? This action is permanent!')">
                         <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
-                        <input type="hidden" name="action" value="unassign_course">
+                        <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="instructor_id" value="<?= $insId ?>">
-                        <input type="hidden" name="course_id" value="<?= $c['id'] ?>">
-                        <button type="submit" class="course-pill-remove border-0 bg-transparent p-0"><i class="fa fa-times-circle"></i></button>
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete"><i class="fa fa-trash"></i></button>
                       </form>
-                    </span>
-                  <?php endforeach; ?>
-                <?php endif; ?>
-              </div>
-            </div>
-
-            <div class="d-flex gap-2">
-              <button class="btn btn-outline-secondary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#modalEdit<?= $insId ?>">
-                <i class="fa fa-edit me-1"></i> Edit Profile
-              </button>
-              <button class="btn btn-outline-primary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#modalAssign<?= $insId ?>">
-                <i class="fa fa-plus me-1"></i> Assign Course
-              </button>
-              <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this instructor? This action is permanent!')">
-                <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="instructor_id" value="<?= $insId ?>">
-                <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete instructor"><i class="fa fa-trash"></i></button>
-              </form>
-            </div>
-          </div>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
         </div>
+      </div>
+    <?php else: ?>
+      <!-- GRID VIEW -->
+      <div class="row g-4">
+        <?php foreach ($instructors as $i):
+          $insId = (int)$i['id'];
+          $insCourses = $assignedMap[$insId] ?? [];
+          $initials = '';
+          if (!empty($i['full_name'])) {
+              $words = explode(' ', $i['full_name']);
+              $initials = strtoupper(substr($words[0] ?? '', 0, 1) . (isset($words[1]) ? substr($words[1], 0, 1) : ''));
+          }
+          
+          $subGraded = (int)$i['graded_submissions'];
+          $subTotal = (int)$i['total_submissions'];
+          $percentGraded = $subTotal > 0 ? (int)round(($subGraded / $subTotal) * 100) : 0;
+          
+          $avail = (string)($i['availability_status'] ?? 'available');
+          $availText = match($avail) {
+            'busy' => 'Busy',
+            'leave' => 'On Leave',
+            default => 'Available'
+          };
+          $availBadge = match($avail) {
+            'busy' => 'badge-avail-busy',
+            'leave' => 'badge-avail-leave',
+            default => 'badge-avail-available'
+          };
 
-        <!-- EDIT INSTRUCTOR MODAL -->
-        <div class="modal fade" id="modalEdit<?= $insId ?>" tabindex="-1">
-          <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title fw-bold">Edit Instructor Profile</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <form method="post" action="admin_instructors.php">
-                <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
-                <input type="hidden" name="action" value="update">
-                <input type="hidden" name="instructor_id" value="<?= $insId ?>">
-                <div class="modal-body">
-                  <div class="row g-3">
-                    <div class="col-md-6">
-                      <label class="form-label">Full Name</label>
-                      <input type="text" name="full_name" class="form-control" value="<?= e($i['full_name'] ?? '') ?>" required>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Phone</label>
-                      <input type="text" name="phone" class="form-control" value="<?= e($i['phone'] ?? '') ?>">
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Specialization</label>
-                      <input type="text" name="specialization" class="form-control" value="<?= e($i['specialization'] ?? '') ?>" required>
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label">Qualification</label>
-                      <input type="text" name="qualification" class="form-control" value="<?= e($i['qualification'] ?? '') ?>">
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label">Experience (Years)</label>
-                      <input type="number" name="experience_years" class="form-control" value="<?= (int)($i['experience_years'] ?? 0) ?>">
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label">Status</label>
-                      <select name="status" class="form-select">
-                        <option value="active" <?= $st === 'active' ? 'selected' : '' ?>>Active</option>
-                        <option value="suspended" <?= $st === 'suspended' ? 'selected' : '' ?>>Suspended</option>
-                        <option value="pending" <?= $st === 'pending' ? 'selected' : '' ?>>Pending</option>
-                      </select>
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label">Availability Status</label>
-                      <select name="availability_status" class="form-select">
-                        <option value="available" <?= $avail === 'available' ? 'selected' : '' ?>>Available</option>
-                        <option value="busy" <?= $avail === 'busy' ? 'selected' : '' ?>>Busy</option>
-                        <option value="leave" <?= $avail === 'leave' ? 'selected' : '' ?>>On Leave</option>
-                      </select>
-                    </div>
-                    <div class="col-12">
-                      <label class="form-label">LinkedIn Profile URL</label>
-                      <input type="url" name="linkedin_url" class="form-control" value="<?= e($i['linkedin_url'] ?? '') ?>" placeholder="https://linkedin.com/in/username">
-                    </div>
-                    <div class="col-12">
-                      <label class="form-label">Bio (Brief Summary)</label>
-                      <textarea name="bio" rows="4" class="form-control"><?= e($i['bio'] ?? '') ?></textarea>
-                    </div>
+          $st = (string)($i['status'] ?? 'active');
+          $statusBadge = match($st) {
+            'active' => 'badge-success',
+            'suspended' => 'badge-danger',
+            default => 'badge-warning'
+          };
+        ?>
+          <div class="col-lg-6">
+            <div class="card-instructor p-4 h-100">
+              <div class="d-flex align-items-start gap-3">
+                <!-- Avatar -->
+                <div class="avatar-wrap">
+                  <?php if (!empty($i['photo'])): ?>
+                    <img src="uploads/<?= e($i['photo']) ?>" alt="<?= e($i['full_name']) ?>" class="avatar-img">
+                  <?php else: ?>
+                    <div class="avatar-placeholder"><?= $initials ?></div>
+                  <?php endif; ?>
+                  <span class="badge-avail <?= $availBadge ?>" title="Status: <?= $availText ?>"></span>
+                </div>
+
+                <!-- General Info -->
+                <div class="flex-grow-1 min-w-0">
+                  <div class="d-flex align-items-center justify-content-between flex-wrap gap-1 mb-1">
+                    <h5 class="fw-bold mb-0 text-truncate" style="max-width:180px;"><?= e($i['full_name']) ?></h5>
+                    <span class="badge <?= $statusBadge ?>"><?= ucfirst($st) ?></span>
                   </div>
+                  <div class="text-indigo-600 fw-semibold small mb-1"><?= e($i['specialization']) ?></div>
+                  <div class="text-muted small mb-2"><i class="fa fa-envelope me-1"></i><?= e($i['email']) ?></div>
+                  <div class="text-muted small"><i class="fa fa-phone me-1"></i><?= e($i['phone'] ?? 'No phone added') ?></div>
                 </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Save Changes</button>
+              </div>
+
+              <hr class="my-3 text-muted" style="opacity:0.15;">
+
+              <!-- Performance Metrics -->
+              <div class="row g-2 text-center mb-3">
+                <div class="col-4">
+                  <div class="metric-label">Courses</div>
+                  <div class="metric-val"><?= (int)$i['course_count'] ?></div>
                 </div>
-              </form>
+                <div class="col-4">
+                  <div class="metric-label">Lessons</div>
+                  <div class="metric-val"><?= (int)$i['lesson_count'] ?></div>
+                </div>
+                <div class="col-4">
+                  <div class="metric-label">Graded</div>
+                  <div class="metric-val"><?= $subGraded ?> / <?= $subTotal ?></div>
+                </div>
+              </div>
+
+              <!-- Grading Performance Bar -->
+              <div class="mb-3">
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                  <span>Grading Completion Rate</span>
+                  <span class="fw-bold text-dark"><?= $percentGraded ?>%</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-indigo" role="progressbar" style="width: <?= $percentGraded ?>%; background-color: var(--brand);" aria-valuenow="<?= $percentGraded ?>" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+
+              <!-- Assigned Courses Section -->
+              <div class="mb-3">
+                <div class="small fw-semibold text-dark mb-1">Assigned Courses:</div>
+                <div class="d-flex flex-wrap align-items-center">
+                  <?php if (empty($insCourses)): ?>
+                    <span class="text-muted small italic">No courses assigned yet.</span>
+                  <?php else: ?>
+                    <?php foreach ($insCourses as $c): ?>
+                      <span class="course-pill">
+                        <?= e($c['title']) ?>
+                        <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Remove course assignment?')">
+                          <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
+                          <input type="hidden" name="action" value="unassign_course">
+                          <input type="hidden" name="instructor_id" value="<?= $insId ?>">
+                          <input type="hidden" name="course_id" value="<?= $c['id'] ?>">
+                          <button type="submit" class="course-pill-remove border-0 bg-transparent p-0"><i class="fa fa-times-circle"></i></button>
+                        </form>
+                      </span>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                </div>
+              </div>
+
+              <div class="d-flex gap-2 mb-2">
+                <a href="admin_instructor_detail.php?id=<?= $insId ?>" class="btn btn-outline-info btn-sm flex-grow-1">
+                  <i class="fa fa-chart-line me-1"></i> View Performance
+                </a>
+                <button class="btn btn-outline-secondary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#modalEdit<?= $insId ?>">
+                  <i class="fa fa-edit me-1"></i> Edit Profile
+                </button>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#modalAssign<?= $insId ?>">
+                  <i class="fa fa-plus me-1"></i> Assign Course
+                </button>
+                <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this instructor? This action is permanent!')">
+                  <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="instructor_id" value="<?= $insId ?>">
+                  <button type="submit" class="btn btn-outline-danger btn-sm h-100" title="Delete instructor"><i class="fa fa-trash"></i></button>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  <?php endif; ?>
 
-        <!-- ASSIGN COURSE MODAL -->
-        <div class="modal fade" id="modalAssign<?= $insId ?>" tabindex="-1">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title fw-bold">Assign Course to <?= e($i['full_name']) ?></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <form method="post" action="admin_instructors.php">
-                <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
-                <input type="hidden" name="action" value="assign_course">
-                <input type="hidden" name="instructor_id" value="<?= $insId ?>">
-                <div class="modal-body">
-                  <div class="mb-3">
-                    <label class="form-label">Select Course</label>
-                    <select name="course_id" class="form-select" required>
-                      <option value="">-- Choose Course --</option>
-                      <?php 
-                      // Filter courses to only show ones NOT already assigned to this instructor
-                      $assignedIds = array_column($insCourses, 'id');
-                      foreach ($courses as $c):
-                        if (in_array((int)$c['id'], $assignedIds, true)) continue;
-                      ?>
-                        <option value="<?= (int)$c['id'] ?>"><?= e($c['title']) ?></option>
-                      <?php endforeach; ?>
+  <!-- MODALS FOR INSTRUCTORS -->
+  <?php if (!empty($instructors)): ?>
+    <?php foreach ($instructors as $i):
+      $insId = (int)$i['id'];
+      $insCourses = $assignedMap[$insId] ?? [];
+      $st = (string)($i['status'] ?? 'active');
+      $avail = (string)($i['availability_status'] ?? 'available');
+    ?>
+      <!-- EDIT INSTRUCTOR MODAL -->
+      <div class="modal fade" id="modalEdit<?= $insId ?>" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title fw-bold">Edit Instructor Profile</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="admin_instructors.php">
+              <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
+              <input type="hidden" name="action" value="update">
+              <input type="hidden" name="instructor_id" value="<?= $insId ?>">
+              <div class="modal-body">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="full_name" class="form-control" value="<?= e($i['full_name'] ?? '') ?>" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input type="text" name="phone" class="form-control" value="<?= e($i['phone'] ?? '') ?>">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Specialization</label>
+                    <input type="text" name="specialization" class="form-control" value="<?= e($i['specialization'] ?? '') ?>" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Qualification</label>
+                    <input type="text" name="qualification" class="form-control" value="<?= e($i['qualification'] ?? '') ?>">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Experience (Years)</label>
+                    <input type="number" name="experience_years" class="form-control" value="<?= (int)($i['experience_years'] ?? 0) ?>">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                      <option value="active" <?= $st === 'active' ? 'selected' : '' ?>>Active</option>
+                      <option value="suspended" <?= $st === 'suspended' ? 'selected' : '' ?>>Suspended</option>
+                      <option value="pending" <?= $st === 'pending' ? 'selected' : '' ?>>Pending</option>
                     </select>
                   </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Availability Status</label>
+                    <select name="availability_status" class="form-select">
+                      <option value="available" <?= $avail === 'available' ? 'selected' : '' ?>>Available</option>
+                      <option value="busy" <?= $avail === 'busy' ? 'selected' : '' ?>>Busy</option>
+                      <option value="leave" <?= $avail === 'leave' ? 'selected' : '' ?>>On Leave</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">LinkedIn Profile URL</label>
+                    <input type="url" name="linkedin_url" class="form-control" value="<?= e($i['linkedin_url'] ?? '') ?>" placeholder="https://linkedin.com/in/username">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label">Bio (Brief Summary)</label>
+                    <textarea name="bio" rows="4" class="form-control"><?= e($i['bio'] ?? '') ?></textarea>
+                  </div>
                 </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Assign</button>
-                </div>
-              </form>
-            </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+              </div>
+            </form>
           </div>
         </div>
+      </div>
 
-      <?php endforeach; ?>
-    </div>
+      <!-- ASSIGN COURSE MODAL -->
+      <div class="modal fade" id="modalAssign<?= $insId ?>" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title fw-bold">Assign Course to <?= e($i['full_name']) ?></h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="admin_instructors.php">
+              <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
+              <input type="hidden" name="action" value="assign_course">
+              <input type="hidden" name="instructor_id" value="<?= $insId ?>">
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label">Select Course</label>
+                  <select name="course_id" class="form-select" required>
+                    <option value="">-- Choose Course --</option>
+                    <?php 
+                    $assignedIds = array_column($insCourses, 'id');
+                    foreach ($courses as $c):
+                      if (in_array((int)$c['id'], $assignedIds, true)) continue;
+                    ?>
+                      <option value="<?= (int)$c['id'] ?>"><?= e($c['title']) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Assign</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    <?php endforeach; ?>
   <?php endif; ?>
 </div>
 

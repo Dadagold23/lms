@@ -119,9 +119,34 @@ try {
     }
 
     $pdo->commit();
+
+    // Send email confirmation and admin notices
+    try {
+        require_once __DIR__ . '/config/mail.php';
+        require_once __DIR__ . '/includes/email_templates.php';
+
+        // 1. Send confirmation to the instructor
+        $insMail = emailInstructorRegistered($fullName, $email);
+        send_mail($email, 'Application Received — Grafix@Mirror LMS', $insMail);
+
+        // 2. Notify all administrators
+        $adminMail = emailAdminNotifyNewInstructor($fullName, $email, $specialization);
+        $stmtAdmins = $pdo->query("SELECT email FROM lms_admins");
+        $adminEmails = $stmtAdmins->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (!empty($adminEmails)) {
+            foreach ($adminEmails as $adminEmail) {
+                if (filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+                    send_mail($adminEmail, 'New Instructor Application — Admin Notice', $adminMail);
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        error_log("Instructor self-reg notifications failed: " . $e->getMessage());
+    }
 } catch (Throwable $e) {
     $pdo->rollBack();
-    $_SESSION['instructor_register_error'] = 'Registration failed. Please try again.';
+    $_SESSION['instructor_register_error'] = 'Registration failed. Please try again: ' . $e->getMessage();
     redirect('instructor_register.php');
 }
 

@@ -288,23 +288,52 @@ $userId = (int)$pdo->lastInsertId();
 try {
     $enCols = $pdo->query("SHOW COLUMNS FROM lms_enrollments")->fetchAll(PDO::FETCH_COLUMN);
     if (in_array('student_id', $enCols, true) && in_array('course_id', $enCols, true)) {
+        
+        // Find instructor for this course
+        $stmtIns = $pdo->prepare("
+            SELECT instructor_id 
+            FROM lms_instructor_courses ic
+            JOIN lms_instructors i ON ic.instructor_id = i.id
+            WHERE ic.course_id = ? AND i.status = 'active'
+            ORDER BY (i.availability_status = 'available') DESC, i.id ASC
+            LIMIT 1
+        ");
+        $stmtIns->execute([$courseId]);
+        $assignedInstructorId = $stmtIns->fetchColumn();
+        
+        $assignedIdVal = $assignedInstructorId ? (int)$assignedInstructorId : null;
+        $needsAssignVal = $assignedInstructorId ? 0 : 1;
+
         $enHasPT = in_array('payment_type', $enCols, true);
         if ($enHasPT) {
             $en = $pdo->prepare("
-                INSERT INTO lms_enrollments (student_id, course_id, paid_amount, payment_type, status, created_at)
-                VALUES (?,?,0,?,'active',NOW())
+                INSERT INTO lms_enrollments (student_id, course_id, paid_amount, payment_type, status, assigned_instructor_id, needs_instructor_assignment, created_at)
+                VALUES (?,?,0,?,'active',?,?,NOW())
             ");
-            $en->execute([$userId, $courseId, $paymentOpt]);
+            $en->execute([$userId, $courseId, $paymentOpt, $assignedIdVal, $needsAssignVal]);
         } else {
             $en = $pdo->prepare("
-                INSERT INTO lms_enrollments (student_id, course_id, paid_amount, status, created_at)
-                VALUES (?,?,0,'active',NOW())
+                INSERT INTO lms_enrollments (student_id, course_id, paid_amount, status, assigned_instructor_id, needs_instructor_assignment, created_at)
+                VALUES (?,?,0,'active',?,?,NOW())
             ");
-            $en->execute([$userId, $courseId]);
+            $en->execute([$userId, $courseId, $assignedIdVal, $needsAssignVal]);
         }
+
+        // Send email confirmation using SMTP
+        require_once __DIR__ . '/config/mail.php';
+        require_once __DIR__ . '/includes/email_templates.php';
+
+        if ($assignedInstructorId) {
+            $mailContent = emailStudentWelcome($firstName, $lastName, $email, $courseTitle);
+            $subject = 'Welcome to Grafix@Mirror LMS - Enrollment Confirmed!';
+        } else {
+            $mailContent = emailStudentEnrollmentPending($firstName, $courseTitle);
+            $subject = 'Welcome to Grafix@Mirror LMS - Enrollment Under Review';
+        }
+        send_mail($email, $subject, $mailContent);
     }
 } catch (Throwable $e) {
-    // ignore if enrollments table not ready yet
+    error_log("Enrollment setup / mail failed: " . $e->getMessage());
 }
 
 /* ======================

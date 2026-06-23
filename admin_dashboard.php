@@ -9,12 +9,13 @@ requireAdminLogin();
 $admin = $_SESSION['admin'];
 
 $stats = [
-  'students'       => (int)$pdo->query("SELECT COUNT(*) FROM lms_students")->fetchColumn(),
-  'courses'        => (int)$pdo->query("SELECT COUNT(*) FROM lms_courses")->fetchColumn(),
-  'enrollments'    => (int)$pdo->query("SELECT COUNT(*) FROM lms_enrollments")->fetchColumn(),
-  'revenue'        => (float)$pdo->query("SELECT COALESCE(SUM(amount),0) FROM lms_payments WHERE status='success'")->fetchColumn(),
-  'pending_manual' => (int)$pdo->query("SELECT COUNT(*) FROM lms_payments WHERE status='pending' AND channel='manual'")->fetchColumn(),
-  'live_upcoming'  => (int)$pdo->query("SELECT COUNT(*) FROM lms_live_sessions WHERE status IN ('scheduled','live')")->fetchColumn(),
+  'students'               => (int)$pdo->query("SELECT COUNT(*) FROM lms_students")->fetchColumn(),
+  'courses'                => (int)$pdo->query("SELECT COUNT(*) FROM lms_courses")->fetchColumn(),
+  'enrollments'            => (int)$pdo->query("SELECT COUNT(*) FROM lms_enrollments")->fetchColumn(),
+  'revenue'                => (float)$pdo->query("SELECT COALESCE(SUM(amount),0) FROM lms_payments WHERE status='success'")->fetchColumn(),
+  'pending_manual'         => (int)$pdo->query("SELECT COUNT(*) FROM lms_payments WHERE status='pending' AND channel='manual'")->fetchColumn(),
+  'live_upcoming'          => (int)$pdo->query("SELECT COUNT(*) FROM lms_live_sessions WHERE status IN ('scheduled','live')")->fetchColumn(),
+  'unassigned_enrollments' => (int)$pdo->query("SELECT COUNT(*) FROM lms_enrollments WHERE needs_instructor_assignment = 1")->fetchColumn(),
 ];
 
 $upcomingSessions = $pdo->query("
@@ -81,6 +82,13 @@ require_once __DIR__ . '/includes/seo.php';
     <div class="nav-section">Management</div>
     <a href="admin_courses.php" class="nav-link"><i class="fa fa-book"></i> Courses</a>
     <a href="admin_instructors.php" class="nav-link"><i class="fa fa-chalkboard-teacher"></i> Instructors</a>
+    <a href="admin_enrollment_assignments.php" class="nav-link">
+      <i class="fa fa-user-tag"></i> Assignments
+      <?php if ($stats['unassigned_enrollments'] > 0): ?>
+        <span style="background:var(--danger);color:#fff;border-radius:99px;padding:.1rem .45rem;font-size:.7rem;margin-left:auto"><?= $stats['unassigned_enrollments'] ?></span>
+      <?php endif; ?>
+    </a>
+    <a href="admin_student_performance.php" class="nav-link"><i class="fa fa-graduation-cap"></i> Student Performance</a>
     <a href="cert_settings.php" class="nav-link"><i class="fa fa-certificate"></i> Certificate</a>
     <a href="admin_badges.php" class="nav-link"><i class="fa fa-award"></i> Badges</a>
     <a href="admin_payment_approval.php" class="nav-link">
@@ -110,6 +118,22 @@ require_once __DIR__ . '/includes/seo.php';
   <main class="lms-main">
 
     <div class="page-title mb-4">Dashboard Overview</div>
+
+    <!-- Alert for unassigned enrollments -->
+    <?php if ($stats['unassigned_enrollments'] > 0): ?>
+      <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between p-3 mb-4 animate__animated animate__fadeIn" style="border-radius: 12px; background-color: #fffbeb; border-left: 5px solid #f59e0b !important;">
+        <div class="d-flex align-items-center gap-3">
+          <div class="bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; min-width: 44px; background-color: #fef3c7;">
+            <i class="fa fa-exclamation-triangle fa-lg text-warning" style="color: #d97706 !important;"></i>
+          </div>
+          <div>
+            <h6 class="fw-bold mb-1 text-dark">Unassigned Student Enrollments</h6>
+            <p class="text-muted small mb-0">There are currently <strong><?= $stats['unassigned_enrollments'] ?></strong> active enrollment(s) with no assigned instructor. Students cannot access course lessons until assigned.</p>
+          </div>
+        </div>
+        <a href="admin_enrollment_assignments.php" class="btn btn-warning btn-sm fw-bold px-3" style="background-color: #f59e0b; color: #fff; border: none; border-radius: 6px;">Assign Now</a>
+      </div>
+    <?php endif; ?>
 
     <!-- STATS -->
     <div class="row g-3 mb-4">

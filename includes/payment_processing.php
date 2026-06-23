@@ -169,6 +169,34 @@ function applyPaymentSuccess(PDO $pdo, array $payment, array $enrollment, float 
         $studentId,
     ]);
 
+    // If enrollment has no instructor assigned yet, try to auto-assign one now
+    if (empty($enrollment['assigned_instructor_id'])) {
+        $stmtIns = $pdo->prepare("
+            SELECT instructor_id 
+            FROM lms_instructor_courses ic
+            JOIN lms_instructors i ON ic.instructor_id = i.id
+            WHERE ic.course_id = ? AND i.status = 'active'
+            ORDER BY (i.availability_status = 'available') DESC, i.id ASC
+            LIMIT 1
+        ");
+        $stmtIns->execute([(int)$enrollment['course_id']]);
+        $assignedInstructorId = $stmtIns->fetchColumn();
+
+        if ($assignedInstructorId) {
+            $pdo->prepare("
+                UPDATE lms_enrollments 
+                SET assigned_instructor_id = ?, needs_instructor_assignment = 0
+                WHERE id = ?
+            ")->execute([(int)$assignedInstructorId, $enrollmentId]);
+        } else {
+            $pdo->prepare("
+                UPDATE lms_enrollments 
+                SET needs_instructor_assignment = 1
+                WHERE id = ?
+            ")->execute([$enrollmentId]);
+        }
+    }
+
     markOtherPendingPaymentsFailed($pdo, $studentId, $enrollmentId, $paymentId);
 
     return $update;
