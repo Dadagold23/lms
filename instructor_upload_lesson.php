@@ -12,7 +12,16 @@ requireInstructorLogin();
 $flash = $_SESSION['ins_lesson_flash'] ?? null;
 unset($_SESSION['ins_lesson_flash']);
 
-$courses = $pdo->query("SELECT id, title FROM lms_courses ORDER BY title")->fetchAll(PDO::FETCH_ASSOC);
+$insId = (int)($_SESSION['instructor']['id'] ?? 0);
+$coursesStmt = $pdo->prepare("
+    SELECT c.id, c.title 
+    FROM lms_courses c
+    JOIN lms_instructor_courses ic ON ic.course_id = c.id
+    WHERE ic.instructor_id = ?
+    ORDER BY c.title
+");
+$coursesStmt->execute([$insId]);
+$courses = $coursesStmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (isPost()) {
     verifyCsrf($_POST['_csrf'] ?? '');
@@ -25,6 +34,14 @@ if (isPost()) {
 
     if ($courseId <= 0 || $title === '') {
         $_SESSION['ins_lesson_flash'] = 'Select a course and enter lesson title.';
+        redirect('instructor_upload_lesson.php');
+    }
+
+    // Verify course belongs to this instructor
+    $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM lms_instructor_courses WHERE instructor_id = ? AND course_id = ?");
+    $checkStmt->execute([$insId, $courseId]);
+    if ((int)$checkStmt->fetchColumn() === 0) {
+        $_SESSION['ins_lesson_flash'] = 'Access denied: you are not assigned to this course.';
         redirect('instructor_upload_lesson.php');
     }
 

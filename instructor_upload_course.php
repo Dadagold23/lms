@@ -63,6 +63,13 @@ if (isPost()) {
         $stmt->execute([$title, $slug, $description, $short, $price, $level, $introVideo]);
     }
 
+    $courseId = (int)$pdo->lastInsertId();
+    $insId = (int)($_SESSION['instructor']['id'] ?? 0);
+    if ($courseId > 0 && $insId > 0) {
+        $pdo->prepare("INSERT INTO lms_instructor_courses (instructor_id, course_id) VALUES (?, ?)")
+            ->execute([$insId, $courseId]);
+    }
+
     $_SESSION['ins_course_flash'] = 'Course uploaded successfully.';
     redirect('instructor_upload_course.php');
 }

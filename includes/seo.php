@@ -57,6 +57,40 @@ $_cookieConsentToken = session_status() === PHP_SESSION_ACTIVE ? csrfToken() : '
 $_hasCookieConsent = isset($_COOKIE['lms_cookie_consent']);
 ?>
 <base href="<?= e(appBaseUrl()) ?>">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+    const alertSelectors = '.alert-success, .alert-danger, .alert-info, .alert-warning, .lms-alert-success, .lms-alert-danger, .lms-alert-info, .lms-alert-warning';
+    const alerts = document.querySelectorAll(alertSelectors);
+    alerts.forEach(alert => {
+        if (alert.closest('.col-lg-4') || alert.classList.contains('mb-3') || alert.closest('.lms-alert-inline')) {
+            return;
+        }
+        const text = alert.textContent.replace(/×/g, '').trim();
+        if (text) {
+            let icon = 'info';
+            let title = 'Notification';
+            if (alert.classList.contains('alert-success') || alert.classList.contains('lms-alert-success')) {
+                icon = 'success';
+                title = 'Success';
+            } else if (alert.classList.contains('alert-danger') || alert.classList.contains('lms-alert-danger')) {
+                icon = 'error';
+                title = 'Error';
+            } else if (alert.classList.contains('alert-warning') || alert.classList.contains('lms-alert-warning')) {
+                icon = 'warning';
+                title = 'Warning';
+            }
+            Swal.fire({
+                icon: icon,
+                title: title,
+                text: text,
+                confirmButtonColor: '#4f46e5'
+            });
+            alert.remove();
+        }
+    });
+});
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 

@@ -7,12 +7,18 @@ require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/config/db.php';
 
 requireInstructorLogin();
+$ins = $_SESSION['instructor'] ?? $_SESSION['user'] ?? null;
+$insId = (int)($ins['id'] ?? 0);
 
-$courses = $pdo->query("
-  SELECT id, title, slug, price, level, intro_video, created_at
-  FROM lms_courses
-  ORDER BY id DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+$stmt = $pdo->prepare("
+  SELECT c.id, c.title, c.slug, c.price, c.level, c.intro_video, c.created_at
+  FROM lms_courses c
+  JOIN lms_instructor_courses ic ON ic.course_id = c.id
+  WHERE ic.instructor_id = ?
+  ORDER BY c.id DESC
+");
+$stmt->execute([$insId]);
+$courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
 <html lang="en">

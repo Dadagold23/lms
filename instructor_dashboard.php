@@ -7,16 +7,21 @@ require_once __DIR__ . '/config/db.php';
 
 requireInstructorLogin();
 $ins = $_SESSION['instructor'];
+$insId = (int)($ins['id'] ?? 0);
+
+$coursesCount = (int)$pdo->query("SELECT COUNT(*) FROM lms_instructor_courses WHERE instructor_id={$insId}")->fetchColumn();
+$lessonsCount = (int)$pdo->query("SELECT COUNT(*) FROM lms_lessons l JOIN lms_instructor_courses ic ON ic.course_id = l.course_id WHERE ic.instructor_id={$insId}")->fetchColumn();
+$videosCount  = (int)$pdo->query("SELECT COUNT(*) FROM lms_videos v JOIN lms_instructor_courses ic ON ic.course_id = v.course_id WHERE ic.instructor_id={$insId}")->fetchColumn();
+$assignCount  = (int)$pdo->query("SELECT COUNT(*) FROM lms_assignments a JOIN lms_instructor_courses ic ON ic.course_id = a.course_id WHERE ic.instructor_id={$insId}")->fetchColumn();
+$subsCount    = (int)$pdo->query("SELECT COUNT(*) FROM lms_assignment_submissions sub JOIN lms_assignments a ON a.id = sub.assignment_id JOIN lms_instructor_courses ic ON ic.course_id = a.course_id WHERE ic.instructor_id={$insId}")->fetchColumn();
 
 $stats = [
-  'courses' => (int)$pdo->query("SELECT COUNT(*) FROM lms_courses")->fetchColumn(),
-  'lessons' => (int)$pdo->query("SELECT COUNT(*) FROM lms_lessons")->fetchColumn(),
-  'videos'  => (int)$pdo->query("SELECT COUNT(*) FROM lms_videos")->fetchColumn(),
-  'assign'  => (int)$pdo->query("SELECT COUNT(*) FROM lms_assignments")->fetchColumn(),
-  'subs'    => (int)$pdo->query("SELECT COUNT(*) FROM lms_assignment_submissions")->fetchColumn(),
+  'courses' => $coursesCount,
+  'lessons' => $lessonsCount,
+  'videos'  => $videosCount,
+  'assign'  => $assignCount,
+  'subs'    => $subsCount,
 ];
-
-$insId = (int)($ins['id'] ?? 0);
 
 // Live sessions for this instructor (or all if admin-level)
 $liveSessions = $pdo->query("
@@ -25,7 +30,7 @@ $liveSessions = $pdo->query("
            (SELECT COUNT(*) FROM lms_session_attendance WHERE session_id=s.id) AS attendees
     FROM lms_live_sessions s
     JOIN lms_courses c ON c.id=s.course_id
-    WHERE (s.instructor_id={$insId} OR s.instructor_id IS NULL)
+    WHERE s.instructor_id={$insId}
       AND s.status IN ('scheduled','live')
     ORDER BY s.scheduled_at ASC LIMIT 5
 ")->fetchAll();
@@ -36,7 +41,9 @@ $recentSubs = $pdo->query("
            s.first_name, s.last_name
     FROM lms_assignment_submissions sub
     JOIN lms_assignments a ON a.id = sub.assignment_id
+    JOIN lms_instructor_courses ic ON ic.course_id = a.course_id
     JOIN lms_students s ON s.id = sub.student_id
+    WHERE ic.instructor_id={$insId}
     ORDER BY sub.submitted_at DESC LIMIT 8
 ")->fetchAll();
 ?>

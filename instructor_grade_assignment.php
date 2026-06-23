@@ -26,10 +26,23 @@ if (isPost()) {
     $scoreVal = null;
     if ($score !== null && $score !== '') $scoreVal = (float)$score;
 
-    // if you have instructor id, use it; otherwise keep NULL
-    $graderId = null;
+    $graderId = 0;
     if (!empty($_SESSION['instructor']['id'])) $graderId = (int)$_SESSION['instructor']['id'];
     elseif (!empty($_SESSION['user']['id'])) $graderId = (int)$_SESSION['user']['id'];
+
+    // Verify submission course belongs to this instructor
+    $checkStmt = $pdo->prepare("
+        SELECT COUNT(*) 
+        FROM lms_assignment_submissions sub
+        JOIN lms_assignments a ON a.id = sub.assignment_id
+        JOIN lms_instructor_courses ic ON ic.course_id = a.course_id
+        WHERE sub.id = ? AND ic.instructor_id = ?
+    ");
+    $checkStmt->execute([$subId, $graderId]);
+    if ((int)$checkStmt->fetchColumn() === 0) {
+        $_SESSION['grade_flash'] = 'Access denied: you cannot grade this submission.';
+        redirect('instructor_grade_assignment.php');
+    }
 
     $stmt = $pdo->prepare("
         UPDATE lms_assignment_submissions
@@ -42,7 +55,11 @@ if (isPost()) {
     redirect('instructor_grade_assignment.php');
 }
 
-$subs = $pdo->query("
+$insId = 0;
+if (!empty($_SESSION['instructor']['id'])) $insId = (int)$_SESSION['instructor']['id'];
+elseif (!empty($_SESSION['user']['id'])) $insId = (int)$_SESSION['user']['id'];
+
+$stmt = $pdo->prepare("
   SELECT s.id, s.file_path, s.note, s.submitted_at, s.score, s.feedback,
          st.first_name, st.last_name, st.email,
          a.title AS assignment_title,
@@ -51,8 +68,12 @@ $subs = $pdo->query("
   JOIN lms_students st ON st.id = s.student_id
   JOIN lms_assignments a ON a.id = s.assignment_id
   JOIN lms_courses c ON c.id = a.course_id
+  JOIN lms_instructor_courses ic ON ic.course_id = c.id
+  WHERE ic.instructor_id = ?
   ORDER BY s.submitted_at DESC
-")->fetchAll(PDO::FETCH_ASSOC);
+");
+$stmt->execute([$insId]);
+$subs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!doctype html>
 <html lang="en">

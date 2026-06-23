@@ -80,6 +80,7 @@ require_once __DIR__ . '/includes/seo.php';
     <a href="analytics.php" class="nav-link"><i class="fa fa-chart-bar"></i> Analytics</a>
     <div class="nav-section">Management</div>
     <a href="admin_courses.php" class="nav-link"><i class="fa fa-book"></i> Courses</a>
+    <a href="admin_instructors.php" class="nav-link"><i class="fa fa-chalkboard-teacher"></i> Instructors</a>
     <a href="cert_settings.php" class="nav-link"><i class="fa fa-certificate"></i> Certificate</a>
     <a href="admin_badges.php" class="nav-link"><i class="fa fa-award"></i> Badges</a>
     <a href="admin_payment_approval.php" class="nav-link">
