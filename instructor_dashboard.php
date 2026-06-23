@@ -104,6 +104,8 @@ require_once __DIR__ . '/includes/seo.php';
     </a>
     <div class="nav-section">Grading</div>
     <a href="instructor_grade_assignment.php" class="nav-link"><i class="fa fa-star"></i> Grade Submissions</a>
+    <div class="nav-section">Settings</div>
+    <a href="instructor_profile.php" class="nav-link"><i class="fa fa-user-cog"></i> Profile Settings</a>
     <div class="nav-section">Portal</div>
     <a href="instructor_logout.php" class="nav-link" style="color:var(--danger)"><i class="fa fa-sign-out-alt"></i> Logout</a>
   </aside>

@@ -30,6 +30,45 @@ if (isPost()) {
     verifyCsrf($_POST['_csrf'] ?? '');
     $action = $_POST['action'] ?? '';
 
+    if ($action === 'send_setup_email') {
+        $insId = (int)($_POST['instructor_id'] ?? 0);
+        if ($insId <= 0) {
+            $_SESSION['admin_ins_error'] = 'Invalid instructor selected.';
+            redirect('admin_instructors.php');
+        }
+
+        // Fetch instructor
+        $insStmt = $pdo->prepare("SELECT full_name, email FROM lms_instructors WHERE id = ? LIMIT 1");
+        $insStmt->execute([$insId]);
+        $instructor = $insStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$instructor) {
+            $_SESSION['admin_ins_error'] = 'Instructor not found.';
+            redirect('admin_instructors.php');
+        }
+
+        // Generate verification token
+        $token = bin2hex(random_bytes(32));
+
+        try {
+            $pdo->prepare("UPDATE lms_instructors SET verification_token = ? WHERE id = ?")
+                ->execute([$token, $insId]);
+
+            // Send setup email
+            $mailContent = emailInstructorWelcomeSetup($instructor['full_name'], $instructor['email'], $token);
+            $mailSent = send_mail($instructor['email'], 'Verify Email & Setup Instructor Account — Grafix@Mirror LMS', $mailContent);
+
+            if ($mailSent) {
+                $_SESSION['admin_ins_success'] = 'Account verification/setup email successfully sent to ' . $instructor['full_name'] . '.';
+            } else {
+                $_SESSION['admin_ins_error'] = 'Setup email failed to send (please check your SMTP settings).';
+            }
+        } catch (Throwable $e) {
+            $_SESSION['admin_ins_error'] = 'Failed to generate token / send email: ' . $e->getMessage();
+        }
+        redirect('admin_instructors.php');
+    }
+
     if ($action === 'create') {
         $fullName       = trim((string)($_POST['full_name'] ?? ''));
         $email          = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
@@ -503,6 +542,12 @@ require_once __DIR__ . '/includes/seo.php';
                       <a href="admin_instructor_detail.php?id=<?= $insId ?>" class="btn btn-outline-info btn-sm" title="View Performance"><i class="fa fa-chart-line"></i> Performance</a>
                       <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalEdit<?= $insId ?>" title="Edit"><i class="fa fa-edit"></i></button>
                       <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAssign<?= $insId ?>" title="Assign Course"><i class="fa fa-plus"></i></button>
+                      <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Send account verification and password setup link to this instructor?')">
+                        <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
+                        <input type="hidden" name="action" value="send_setup_email">
+                        <input type="hidden" name="instructor_id" value="<?= $insId ?>">
+                        <button type="submit" class="btn btn-outline-warning btn-sm" title="Send Setup Link"><i class="fa fa-paper-plane"></i></button>
+                      </form>
                       <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this instructor? This action is permanent!')">
                         <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                         <input type="hidden" name="action" value="delete">
@@ -641,6 +686,12 @@ require_once __DIR__ . '/includes/seo.php';
                 <button class="btn btn-outline-primary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#modalAssign<?= $insId ?>">
                   <i class="fa fa-plus me-1"></i> Assign Course
                 </button>
+                <form method="post" action="admin_instructors.php" class="d-inline flex-grow-1" onsubmit="return confirm('Send account verification and password setup link to this instructor?')">
+                  <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
+                  <input type="hidden" name="action" value="send_setup_email">
+                  <input type="hidden" name="instructor_id" value="<?= $insId ?>">
+                  <button type="submit" class="btn btn-outline-warning btn-sm w-100" title="Send Setup Link"><i class="fa fa-paper-plane me-1"></i> Send Setup</button>
+                </form>
                 <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this instructor? This action is permanent!')">
                   <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                   <input type="hidden" name="action" value="delete">

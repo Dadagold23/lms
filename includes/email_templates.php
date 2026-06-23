@@ -252,3 +252,45 @@ HTML;
 
     return emailWrap('Enrollment Confirmed — Grafix@Mirror LMS', $body);
 }
+
+/**
+ * Setup link email for existing instructors (Option 1).
+ */
+function emailInstructorWelcomeSetup(
+    string $fullName,
+    string $email,
+    string $token,
+    string $setupUrl = 'http://localhost/lms/instructor_reset_password.php'
+): string {
+    $nameSafe  = htmlspecialchars($fullName);
+    $emailSafe = htmlspecialchars($email);
+    $fullUrl   = $setupUrl . '?token=' . urlencode($token);
+
+    $body = <<<HTML
+    <h2 style="margin:0 0 8px;color:#1e1b4b;font-size:26px;font-weight:800;">Welcome to Grafix@Mirror LMS, {$nameSafe}! 🎉</h2>
+    <p style="margin:0 0 20px;color:#64748b;font-size:15px;line-height:1.6;">
+      Your instructor account is ready. Before you can log in, please verify your email address and choose a secure password to activate your portal profile.
+    </p>
+
+    <div style="background:#f0f4ff;border-left:4px solid #4f46e5;border-radius:8px;padding:18px 20px;margin-bottom:24px;">
+      <p style="margin:0;color:#1e293b;font-size:15px;"><strong>Registered Email:</strong> {$emailSafe}</p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:28px;">
+      <a href="{$fullUrl}" style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:0.3px;">
+        Verify Email & Setup Account →
+      </a>
+    </div>
+
+    <p style="margin:0 0 20px;color:#94a3b8;font-size:13px;line-height:1.6;word-break:break-all;">
+      If the button above does not work, copy and paste this URL into your web browser:<br>
+      <a href="{$fullUrl}" style="color:#4f46e5;text-decoration:underline;">{$fullUrl}</a>
+    </p>
+
+    <p style="margin:0;color:#94a3b8;font-size:13px;line-height:1.6;">
+      If you did not request this account setup email, please ignore it or contact system support.
+    </p>
+HTML;
+
+    return emailWrap('Verify Email & Setup Instructor Account — Grafix@Mirror LMS', $body);
+}
