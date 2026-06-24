@@ -45,6 +45,10 @@ if (isPost()) {
             WHERE id = ?
         ")->execute([$instructorId, $enrollId]);
 
+        // Send notifications to Student and Admin
+        require_once __DIR__ . '/includes/student_notifications.php';
+        notifyInstructorAssigned($pdo, $enrollId, $instructorId);
+
         $_SESSION['enroll_assign_flash'] = ['type' => 'success', 'msg' => 'Instructor assigned successfully.'];
     } catch (Throwable $e) {
         $_SESSION['enroll_assign_flash'] = ['type' => 'danger', 'msg' => 'Assignment failed: ' . $e->getMessage()];

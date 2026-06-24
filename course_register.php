@@ -59,4 +59,9 @@ $en = $pdo->prepare("SELECT id FROM lms_enrollments WHERE student_id=? AND cours
 $en->execute([$studentId, $courseId]);
 $enrollmentId = (int)$en->fetchColumn();
 
+if ($assignedIdVal && $enrollmentId > 0) {
+    require_once __DIR__ . '/includes/student_notifications.php';
+    notifyInstructorAssigned($pdo, $enrollmentId, $assignedIdVal);
+}
+
 redirect('pay.php?enrollment_id=' . $enrollmentId);

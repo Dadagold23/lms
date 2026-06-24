@@ -319,6 +319,12 @@ try {
             $en->execute([$userId, $courseId, $assignedIdVal, $needsAssignVal]);
         }
 
+        $enrollmentId = (int)$pdo->lastInsertId();
+        if ($assignedIdVal && $enrollmentId > 0) {
+            require_once __DIR__ . '/includes/student_notifications.php';
+            notifyInstructorAssigned($pdo, $enrollmentId, $assignedIdVal);
+        }
+
         // Send email confirmation using SMTP
         require_once __DIR__ . '/config/mail.php';
         require_once __DIR__ . '/includes/email_templates.php';

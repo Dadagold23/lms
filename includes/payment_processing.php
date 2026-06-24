@@ -188,6 +188,10 @@ function applyPaymentSuccess(PDO $pdo, array $payment, array $enrollment, float 
                 SET assigned_instructor_id = ?, needs_instructor_assignment = 0
                 WHERE id = ?
             ")->execute([(int)$assignedInstructorId, $enrollmentId]);
+
+            // Send notifications to Student and Admin
+            require_once __DIR__ . '/student_notifications.php';
+            notifyInstructorAssigned($pdo, (int)$enrollmentId, (int)$assignedInstructorId);
         } else {
             $pdo->prepare("
                 UPDATE lms_enrollments 

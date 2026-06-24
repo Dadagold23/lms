@@ -152,3 +152,77 @@ function studentNotificationWhatsappRecipients(PDO $pdo, int $courseId): array
         ];
     }, $stmt->fetchAll(PDO::FETCH_ASSOC) ?: []);
 }
+
+function notifyInstructorAssigned(PDO $pdo, int $enrollmentId, int $instructorId): void
+{
+    try {
+        // Fetch details
+        $stmt = $pdo->prepare("
+            SELECT 
+                s.id AS student_id,
+                s.first_name AS student_first_name,
+                CONCAT(s.first_name, ' ', s.last_name) AS student_name,
+                s.email AS student_email,
+                c.id AS course_id,
+                c.title AS course_title,
+                i.full_name AS instructor_name,
+                i.email AS instructor_email
+            FROM lms_enrollments e
+            JOIN lms_students s ON s.id = e.student_id
+            JOIN lms_courses c ON c.id = e.course_id
+            JOIN lms_instructors i ON i.id = ?
+            WHERE e.id = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$instructorId, $enrollmentId]);
+        $details = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$details) {
+            return;
+        }
+
+        // 1. Add database notification for the student
+        try {
+            $pdo->exec("ALTER TABLE lms_student_notifications MODIFY COLUMN type ENUM('assignment','live_session','instructor') NOT NULL");
+        } catch (Throwable $e) {}
+
+        $notifStmt = $pdo->prepare("
+            INSERT INTO lms_student_notifications (student_id, course_id, type, title, message, action_url)
+            VALUES (?, ?, 'instructor', 'Instructor Assigned', ?, 'dashboard.php')
+        ");
+        $notifMsg = "Your course instructor has been assigned! You can now contact and learn with " . $details['instructor_name'] . ".";
+        $notifStmt->execute([(int)$details['student_id'], (int)$details['course_id'], $notifMsg]);
+
+        // 2. Send email to student
+        require_once __DIR__ . '/../config/mail.php';
+        require_once __DIR__ . '/email_templates.php';
+
+        $studentMail = emailStudentInstructorAssigned(
+            $details['student_first_name'],
+            $details['course_title'],
+            $details['instructor_name'],
+            $details['instructor_email']
+        );
+        send_mail($details['student_email'], 'Instructor Assigned — Grafix@Mirror LMS', $studentMail);
+
+        // 3. Send email to active administrators
+        $adminStmt = $pdo->query("SELECT first_name, last_name, email FROM lms_admins WHERE status='active' LIMIT 10");
+        $admins = $adminStmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($admins as $admin) {
+            $adminName = trim(($admin['first_name'] ?? '') . ' ' . ($admin['last_name'] ?? ''));
+            if ($adminName === '') {
+                $adminName = 'Admin';
+            }
+            $adminMail = emailAdminInstructorAssigned(
+                $adminName,
+                $details['student_name'],
+                $details['course_title'],
+                $details['instructor_name']
+            );
+            send_mail($admin['email'], 'Instructor Assignment Confirmation — Admin', $adminMail);
+        }
+    } catch (Throwable $e) {
+        // Log to prevent breaking registration/payment flows
+        error_log("Failed to send instructor assignment notifications: " . $e->getMessage());
+    }
+}

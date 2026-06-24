@@ -314,3 +314,81 @@ HTML;
 
     return emailWrap('Verify Email & Setup Instructor Account — Grafix@Mirror LMS', $body);
 }
+
+/**
+ * Email to student when an instructor is assigned to their enrollment.
+ */
+function emailStudentInstructorAssigned(
+    string $firstName,
+    string $courseTitle,
+    string $instructorName,
+    string $instructorEmail
+): string {
+    $studentNameSafe = htmlspecialchars($firstName);
+    $courseSafe      = htmlspecialchars($courseTitle);
+    $insNameSafe     = htmlspecialchars($instructorName);
+    $insEmailSafe    = htmlspecialchars($instructorEmail);
+    $loginUrl        = appAbsoluteUrl('dashboard.php');
+
+    $body = <<<HTML
+    <h2 style="margin:0 0 8px;color:#1e1b4b;font-size:24px;font-weight:800;">Instructor Assigned! 🎓</h2>
+    <p style="margin:0 0 20px;color:#64748b;font-size:15px;line-height:1.6;">
+      Hello {$studentNameSafe}, we are pleased to inform you that an instructor has been assigned to guide you through your course <strong>{$courseSafe}</strong>.
+    </p>
+
+    <div style="background:#f0f4ff;border-left:4px solid #4f46e5;border-radius:8px;padding:18px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 6px;color:#4f46e5;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;">Your Assigned Instructor</p>
+      <p style="margin:0 0 4px;color:#1e293b;font-size:15px;"><strong>Name:</strong> {$insNameSafe}</p>
+      <p style="margin:0;color:#1e293b;font-size:15px;"><strong>Email:</strong> <a href="mailto:{$insEmailSafe}" style="color:#4f46e5;text-decoration:none;">{$insEmailSafe}</a></p>
+    </div>
+
+    <p style="margin:0 0 24px;color:#64748b;font-size:14px;line-height:1.6;">
+      You can now log in to your student dashboard to see your instructor's floating tag and start your learning journey!
+    </p>
+
+    <div style="text-align:center;margin-bottom:20px;">
+      <a href="{$loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:700;">
+        Go to Dashboard →
+      </a>
+    </div>
+HTML;
+
+    return emailWrap('Instructor Assigned — Grafix@Mirror LMS', $body);
+}
+
+/**
+ * Email to admin when an instructor is assigned to an enrollment.
+ */
+function emailAdminInstructorAssigned(
+    string $adminName,
+    string $studentName,
+    string $courseTitle,
+    string $instructorName
+): string {
+    $adminSafe       = htmlspecialchars($adminName);
+    $studentSafe     = htmlspecialchars($studentName);
+    $courseSafe      = htmlspecialchars($courseTitle);
+    $insNameSafe     = htmlspecialchars($instructorName);
+    $adminUrl        = appAbsoluteUrl('admin_dashboard.php');
+
+    $body = <<<HTML
+    <h2 style="margin:0 0 8px;color:#1e1b4b;font-size:24px;font-weight:800;">Instructor Assignment Logged 📋</h2>
+    <p style="margin:0 0 20px;color:#64748b;font-size:15px;line-height:1.6;">
+      Hello {$adminSafe}, this is to notify you that an instructor has been successfully assigned to an active enrollment.
+    </p>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:18px 20px;margin-bottom:24px;">
+      <p style="margin:0 0 8px;color:#1e293b;font-size:15px;"><strong>Student:</strong> {$studentSafe}</p>
+      <p style="margin:0 0 8px;color:#1e293b;font-size:15px;"><strong>Course:</strong> {$courseSafe}</p>
+      <p style="margin:0;color:#1e293b;font-size:15px;"><strong>Assigned Instructor:</strong> {$insNameSafe}</p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:20px;">
+      <a href="{$adminUrl}" style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:700;">
+        Access Admin Dashboard →
+      </a>
+    </div>
+HTML;
+
+    return emailWrap('Instructor Assigned Notice — Grafix@Mirror LMS', $body);
+}
