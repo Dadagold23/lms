@@ -26,9 +26,12 @@ $name = trim(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? ''
 $stmt = $pdo->prepare("
     SELECT c.id, c.title, c.slug, c.price, c.level, c.intro_video" . workspaceCourseSelectSql($pdo, 'c') . ",
            e.id AS enrollment_id, e.paid_amount, e.payment_type,
-           e.status AS enroll_status, e.next_due_date, e.access_expires_at
+           e.status AS enroll_status, e.next_due_date, e.access_expires_at,
+           e.assigned_instructor_id,
+           ins.full_name AS instructor_name, ins.photo AS instructor_photo
     FROM lms_courses c
     INNER JOIN lms_enrollments e ON e.course_id = c.id
+    LEFT JOIN lms_instructors ins ON e.assigned_instructor_id = ins.id
     WHERE e.student_id = ?
     ORDER BY e.created_at ASC
 ");
@@ -74,6 +77,54 @@ require_once __DIR__ . '/includes/seo.php';
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 <link href="assets/css/app.css" rel="stylesheet">
+<style>
+.instructor-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 2;
+  transition: all 0.2s ease-in-out;
+}
+.instructor-tag:hover {
+  transform: scale(1.05);
+  background: rgba(79, 70, 229, 0.95);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+}
+.instructor-tag-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+.instructor-tag-avatar-placeholder {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #4f46e5;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+</style>
 </head>
 <body>
 
@@ -282,6 +333,7 @@ require_once __DIR__ . '/includes/seo.php';
       <div class="row g-3 mb-4">
       <?php foreach ($myCourses as $c):
         $c = workspaceCourseRow((array)$c);
+        $cid     = (int)$c['id'];
         $access  = enrollmentAccessState($c);
         $paid    = (float)($c['paid_amount'] ?? 0);
         $price   = (float)($c['price'] ?? 0);
@@ -319,7 +371,19 @@ require_once __DIR__ . '/includes/seo.php';
         }
       ?>
         <div class="col-md-6 col-xl-4">
-          <div class="course-card h-100">
+          <div class="course-card h-100" style="position: relative;">
+            <?php if (!empty($c['instructor_name'])): ?>
+              <div class="instructor-tag" title="Assigned Instructor">
+                <?php if (!empty($c['instructor_photo'])): ?>
+                  <img src="uploads/<?= e($c['instructor_photo']) ?>" alt="" class="instructor-tag-avatar">
+                <?php else: ?>
+                  <div class="instructor-tag-avatar-placeholder">
+                    <?= strtoupper(substr($c['instructor_name'], 0, 1)) ?>
+                  </div>
+                <?php endif; ?>
+                <span><?= e($c['instructor_name']) ?></span>
+              </div>
+            <?php endif; ?>
             <div class="course-thumb">
               <i class="fa fa-book-open"></i>
             </div>

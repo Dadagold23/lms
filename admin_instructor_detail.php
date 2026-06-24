@@ -20,14 +20,21 @@ if (!$instructor) redirect('admin_instructors.php');
 // ─── Performance Summary ───
 $perf = $pdo->prepare("
     SELECT
-        (SELECT COUNT(*) FROM lms_instructor_courses WHERE instructor_id = :id) AS total_courses,
-        (SELECT COUNT(l.id) FROM lms_lessons l JOIN lms_instructor_courses ic ON ic.course_id = l.course_id WHERE ic.instructor_id = :id) AS total_lessons,
-        (SELECT COUNT(DISTINCT e.student_id) FROM lms_enrollments e JOIN lms_instructor_courses ic ON ic.course_id = e.course_id WHERE ic.instructor_id = :id) AS total_students,
-        (SELECT COUNT(s.id) FROM lms_assignment_submissions s JOIN lms_assignments a ON a.id = s.assignment_id JOIN lms_instructor_courses ic ON ic.course_id = a.course_id WHERE ic.instructor_id = :id) AS total_submissions,
-        (SELECT COUNT(s.id) FROM lms_assignment_submissions s JOIN lms_assignments a ON a.id = s.assignment_id JOIN lms_instructor_courses ic ON ic.course_id = a.course_id WHERE ic.instructor_id = :id AND s.score IS NOT NULL) AS graded_submissions,
-        (SELECT ROUND(AVG(s.score),1) FROM lms_assignment_submissions s JOIN lms_assignments a ON a.id = s.assignment_id JOIN lms_instructor_courses ic ON ic.course_id = a.course_id WHERE ic.instructor_id = :id AND s.score IS NOT NULL) AS avg_score
+        (SELECT COUNT(*) FROM lms_instructor_courses WHERE instructor_id = :id1) AS total_courses,
+        (SELECT COUNT(l.id) FROM lms_lessons l JOIN lms_instructor_courses ic ON ic.course_id = l.course_id WHERE ic.instructor_id = :id2) AS total_lessons,
+        (SELECT COUNT(DISTINCT e.student_id) FROM lms_enrollments e JOIN lms_instructor_courses ic ON ic.course_id = e.course_id WHERE ic.instructor_id = :id3) AS total_students,
+        (SELECT COUNT(s.id) FROM lms_assignment_submissions s JOIN lms_assignments a ON a.id = s.assignment_id JOIN lms_instructor_courses ic ON ic.course_id = a.course_id WHERE ic.instructor_id = :id4) AS total_submissions,
+        (SELECT COUNT(s.id) FROM lms_assignment_submissions s JOIN lms_assignments a ON a.id = s.assignment_id JOIN lms_instructor_courses ic ON ic.course_id = a.course_id WHERE ic.instructor_id = :id5 AND s.score IS NOT NULL) AS graded_submissions,
+        (SELECT ROUND(AVG(s.score),1) FROM lms_assignment_submissions s JOIN lms_assignments a ON a.id = s.assignment_id JOIN lms_instructor_courses ic ON ic.course_id = a.course_id WHERE ic.instructor_id = :id6 AND s.score IS NOT NULL) AS avg_score
 ");
-$perf->execute([':id' => $insId]);
+$perf->execute([
+    ':id1' => $insId,
+    ':id2' => $insId,
+    ':id3' => $insId,
+    ':id4' => $insId,
+    ':id5' => $insId,
+    ':id6' => $insId
+]);
 $summary = $perf->fetch(PDO::FETCH_ASSOC);
 
 // ─── Per-course Breakdown ───
