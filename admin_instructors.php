@@ -388,13 +388,7 @@ require_once __DIR__ . '/includes/seo.php';
 
 <div class="container py-4">
 
-  <!-- Alert System -->
-  <?php if ($flashSuccess): ?>
-    <div class="alert alert-success"><?= e($flashSuccess) ?></div>
-  <?php endif; ?>
-  <?php if ($flashError): ?>
-    <div class="alert alert-danger"><?= e($flashError) ?></div>
-  <?php endif; ?>
+  <!-- Alerts handled by SweetAlert2 at bottom of file -->
 
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
@@ -542,13 +536,13 @@ require_once __DIR__ . '/includes/seo.php';
                       <a href="admin_instructor_detail.php?id=<?= $insId ?>" class="btn btn-outline-info btn-sm" title="View Performance"><i class="fa fa-chart-line"></i> Performance</a>
                       <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalEdit<?= $insId ?>" title="Edit"><i class="fa fa-edit"></i></button>
                       <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAssign<?= $insId ?>" title="Assign Course"><i class="fa fa-plus"></i></button>
-                      <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Send account verification and password setup link to this instructor?')">
+                      <form method="post" action="admin_instructors.php" class="d-inline" data-confirm-setup>
                         <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                         <input type="hidden" name="action" value="send_setup_email">
                         <input type="hidden" name="instructor_id" value="<?= $insId ?>">
                         <button type="submit" class="btn btn-outline-warning btn-sm" title="Send Setup Link"><i class="fa fa-paper-plane"></i></button>
                       </form>
-                      <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this instructor? This action is permanent!')">
+                      <form method="post" action="admin_instructors.php" class="d-inline" data-confirm-delete>
                         <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="instructor_id" value="<?= $insId ?>">
@@ -661,7 +655,7 @@ require_once __DIR__ . '/includes/seo.php';
                     <?php foreach ($insCourses as $c): ?>
                       <span class="course-pill">
                         <?= e($c['title']) ?>
-                        <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Remove course assignment?')">
+                        <form method="post" action="admin_instructors.php" class="d-inline" data-confirm-unassign>
                           <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                           <input type="hidden" name="action" value="unassign_course">
                           <input type="hidden" name="instructor_id" value="<?= $insId ?>">
@@ -686,13 +680,13 @@ require_once __DIR__ . '/includes/seo.php';
                 <button class="btn btn-outline-primary btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#modalAssign<?= $insId ?>">
                   <i class="fa fa-plus me-1"></i> Assign Course
                 </button>
-                <form method="post" action="admin_instructors.php" class="d-inline flex-grow-1" onsubmit="return confirm('Send account verification and password setup link to this instructor?')">
+                <form method="post" action="admin_instructors.php" class="d-inline flex-grow-1" data-confirm-setup>
                   <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                   <input type="hidden" name="action" value="send_setup_email">
                   <input type="hidden" name="instructor_id" value="<?= $insId ?>">
                   <button type="submit" class="btn btn-outline-warning btn-sm w-100" title="Send Setup Link"><i class="fa fa-paper-plane me-1"></i> Send Setup</button>
                 </form>
-                <form method="post" action="admin_instructors.php" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this instructor? This action is permanent!')">
+                <form method="post" action="admin_instructors.php" class="d-inline" data-confirm-delete>
                   <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                   <input type="hidden" name="action" value="delete">
                   <input type="hidden" name="instructor_id" value="<?= $insId ?>">
@@ -883,5 +877,88 @@ require_once __DIR__ . '/includes/seo.php';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Flash Messages
+    <?php if ($flashSuccess): ?>
+      Swal.fire({
+        title: 'Success!',
+        text: <?= json_encode($flashSuccess) ?>,
+        icon: 'success',
+        confirmButtonColor: '#4f46e5'
+      });
+    <?php endif; ?>
+
+    <?php if ($flashError): ?>
+      Swal.fire({
+        title: 'Error!',
+        text: <?= json_encode($flashError) ?>,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+    <?php endif; ?>
+
+    // Intercept delete forms
+    document.querySelectorAll('form[data-confirm-delete]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This action is permanent and will delete the instructor!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, delete instructor!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+
+    // Intercept send setup email forms
+    document.querySelectorAll('form[data-confirm-setup]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Send Setup Email?',
+                text: "Send account verification and password setup link to this instructor?",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, send link!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+
+    // Intercept remove course forms
+    document.querySelectorAll('form[data-confirm-unassign]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Remove Assignment?',
+                text: "This will unassign the instructor from this course.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, remove assignment!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+});
+</script>
 </body>
 </html>
