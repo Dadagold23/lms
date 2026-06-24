@@ -114,6 +114,24 @@ function appBaseUrl(): string
     return rtrim($base, '/') . '/';
 }
 
+function appAbsoluteUrl(string $path = ''): string
+{
+    // Try environment variable loaded from .env
+    $envUrl = trim((string)($_ENV['APP_URL'] ?? ''));
+    if ($envUrl !== '') {
+        // Strip out public suffix if present to match lms root structure
+        $envUrl = str_replace('/public/', '/', $envUrl);
+        $envUrl = str_replace('/public', '', $envUrl);
+        return rtrim($envUrl, '/') . '/' . ltrim($path, '/');
+    }
+
+    // Dynamic fallback
+    $protocol = isHttpsRequest() ? 'https://' : 'http://';
+    $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $base     = appBaseUrl();
+    return $protocol . $host . $base . ltrim($path, '/');
+}
+
 function isPost(): bool
 {
     return isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST';

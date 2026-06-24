@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/helpers.php';
+
 /**
  * Shared branded HTML email wrapper.
  */
@@ -65,8 +67,11 @@ function emailStudentWelcome(
     string $lastName,
     string $email,
     string $courseTitle,
-    string $loginUrl = 'http://localhost/lms/login.php'
+    string $loginUrl = ''
 ): string {
+    if ($loginUrl === '') {
+        $loginUrl = appAbsoluteUrl('login.php');
+    }
     $fullName   = htmlspecialchars(trim($firstName . ' ' . $lastName));
     $courseSafe = htmlspecialchars($courseTitle);
     $emailSafe  = htmlspecialchars($email);
@@ -111,8 +116,11 @@ function emailInstructorWelcome(
     string $fullName,
     string $email,
     string $plainPassword,
-    string $loginUrl = 'http://localhost/lms/instructor_login.php'
+    string $loginUrl = ''
 ): string {
+    if ($loginUrl === '') {
+        $loginUrl = appAbsoluteUrl('instructor_login.php');
+    }
     $nameSafe  = htmlspecialchars($fullName);
     $emailSafe = htmlspecialchars($email);
     $pwdSafe   = htmlspecialchars($plainPassword);
@@ -151,8 +159,11 @@ HTML;
 function emailInstructorRegistered(
     string $fullName,
     string $email,
-    string $loginUrl = 'http://localhost/lms/instructor_login.php'
+    string $loginUrl = ''
 ): string {
+    if ($loginUrl === '') {
+        $loginUrl = appAbsoluteUrl('instructor_login.php');
+    }
     $nameSafe  = htmlspecialchars($fullName);
     $emailSafe = htmlspecialchars($email);
 
@@ -191,8 +202,11 @@ function emailAdminNotifyNewInstructor(
     string $instructorName,
     string $instructorEmail,
     string $specialization,
-    string $adminUrl = 'http://localhost/lms/admin_instructors.php'
+    string $adminUrl = ''
 ): string {
+    if ($adminUrl === '') {
+        $adminUrl = appAbsoluteUrl('admin_instructors.php');
+    }
     $nameSafe  = htmlspecialchars($instructorName);
     $emailSafe = htmlspecialchars($instructorEmail);
     $specSafe  = htmlspecialchars($specialization);
@@ -225,8 +239,11 @@ HTML;
 function emailStudentEnrollmentPending(
     string $firstName,
     string $courseTitle,
-    string $loginUrl = 'http://localhost/lms/dashboard.php'
+    string $loginUrl = ''
 ): string {
+    if ($loginUrl === '') {
+        $loginUrl = appAbsoluteUrl('dashboard.php');
+    }
     $nameSafe   = htmlspecialchars($firstName);
     $courseSafe = htmlspecialchars($courseTitle);
 
@@ -260,8 +277,11 @@ function emailInstructorWelcomeSetup(
     string $fullName,
     string $email,
     string $token,
-    string $setupUrl = 'http://localhost/lms/instructor_reset_password.php'
+    string $setupUrl = ''
 ): string {
+    if ($setupUrl === '') {
+        $setupUrl = appAbsoluteUrl('instructor_reset_password.php');
+    }
     $nameSafe  = htmlspecialchars($fullName);
     $emailSafe = htmlspecialchars($email);
     $fullUrl   = $setupUrl . '?token=' . urlencode($token);
