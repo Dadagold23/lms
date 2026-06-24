@@ -6,6 +6,12 @@
 Options -Indexes
 ServerSignature Off
 
+# ── Custom Error Pages ────────────────────────────────────────
+ErrorDocument 404 /404.php
+ErrorDocument 403 /403.php
+ErrorDocument 500 /500.php
+
+
 # ── Force HTTPS (production only — skipped on localhost) ─────
 <IfModule mod_rewrite.c>
     RewriteEngine On

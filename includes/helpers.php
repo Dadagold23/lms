@@ -303,3 +303,29 @@ function autoAwardCredentials(int $studentId, PDO $pdo): void
         }
     }
 }
+
+/**
+ * Renders the brand logo as a high-quality inline SVG.
+ * Allows custom sizing and additional CSS classes.
+ */
+function getBrandLogoSvg(int $size = 40, string $class = ''): string
+{
+    $classAttr = $class !== '' ? ' class="' . htmlspecialchars($class, ENT_QUOTES, 'UTF-8') . '"' : '';
+    return '
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="' . $size . '" height="' . $size . '"' . $classAttr . ' style="display:inline-block; vertical-align:middle; flex-shrink:0;">
+      <defs>
+        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#4f46e5" />
+          <stop offset="100%" stop-color="#3b82f6" />
+        </linearGradient>
+        <linearGradient id="dotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38bdf8" />
+          <stop offset="100%" stop-color="#06b6d4" />
+        </linearGradient>
+      </defs>
+      <rect width="100" height="100" rx="26" fill="url(#logoGrad)" />
+      <path d="M70,50 C70,61.05 61.05,70 50,70 C38.95,70 30,61.05 30,50 C30,38.95 38.95,30 50,30 C58.28,30 65.36,35.03 68.32,42.18 L55.6,42.18 C54.34,39.06 51.42,37.05 48,37.05 C42.17,37.05 37.45,41.77 37.45,47.6 C37.45,53.43 42.17,58.15 48,58.15 C52.75,58.15 56.76,55 58.15,50.7 L48,50.7 L48,43.2 L70,43.2 L70,50 Z" fill="#ffffff" />
+      <circle cx="78" cy="22" r="8" fill="url(#dotGrad)" />
+    </svg>';
+}
+

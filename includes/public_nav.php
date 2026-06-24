@@ -19,8 +19,8 @@ if ($publicNavActive === '') {
 ?>
 <nav class="lms-nav public-nav">
   <div class="container public-nav__inner">
-    <a href="index.php" class="brand text-decoration-none">
-      <div class="public-nav__mark">G</div>
+    <a href="index.php" class="brand text-decoration-none d-flex align-items-center gap-2">
+      <?= getBrandLogoSvg(34) ?>
       <span>Grafix<span style="color:var(--brand)">@Mirror</span></span>
     </a>
 

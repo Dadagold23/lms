@@ -32,7 +32,7 @@ require_once __DIR__ . '/includes/seo.php';
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
-<link href="assets/css/app.css" rel="stylesheet">
+<link href="assets/css/app.css?v=20260624-auth-fix" rel="stylesheet">
 </head>
 <body style="background:var(--surface)">
 
@@ -41,9 +41,46 @@ require_once __DIR__ . '/includes/seo.php';
 <div class="container py-4" style="max-width:760px">
 
   <div class="text-center mb-4">
-    <div style="width:56px;height:56px;background:var(--brand);border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.5rem;margin:0 auto .75rem">
-      <i class="fa fa-chalkboard-teacher"></i>
-    </div>
+    <!-- Instructor pathway SVG -->
+    <svg class="svg-float mb-3" width="100%" height="80" viewBox="0 0 500 80" xmlns="http://www.w3.org/2000/svg" style="max-width: 420px; margin: 0 auto; display: block;">
+      <defs>
+        <linearGradient id="insLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#0284c7" />
+          <stop offset="100%" stop-color="#10b981" />
+        </linearGradient>
+      </defs>
+      <path d="M 100 40 L 400 40" fill="none" stroke="url(#insLineGrad)" stroke-width="3" stroke-dasharray="6 4" />
+      
+      <!-- Node 1: Profile -->
+      <g transform="translate(100, 40)">
+        <circle cx="0" cy="0" r="20" fill="#0284c7" fill-opacity="0.12" />
+        <circle cx="0" cy="0" r="14" fill="#0284c7" />
+        <!-- Resume / Document -->
+        <path d="M -4,-5 L 1,-5 L 4,-2 L 4,5 L -4,5 Z" fill="none" stroke="#ffffff" stroke-width="1.5" />
+        <line x1="-2" y1="-1" x2="2" y2="-1" stroke="#ffffff" stroke-width="1" />
+        <line x1="-2" y1="1" x2="2" y2="1" stroke="#ffffff" stroke-width="1" />
+        <text x="0" y="30" font-family="'Inter', sans-serif" font-size="10" font-weight="700" fill="#0284c7" text-anchor="middle">1. Profile</text>
+      </g>
+      
+      <!-- Node 2: Specialties -->
+      <g transform="translate(250, 40)">
+        <circle cx="0" cy="0" r="20" fill="#0ea5e9" fill-opacity="0.12" />
+        <circle cx="0" cy="0" r="14" fill="#0ea5e9" />
+        <!-- Gears/Specialty -->
+        <circle cx="0" cy="0" r="4.5" fill="none" stroke="#ffffff" stroke-width="1.8" />
+        <path d="M 0,-6 L 0,-4.5 M 0,4.5 L 0,6 M -6,0 L -4.5,0 M 4.5,0 L 6,0 M -4.5,-4.5 L -3,-3 M 3,3 L 4.5,4.5 M -4.5,4.5 L -3,3 M 3,-3 L 4.5,-4.5" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+        <text x="0" y="30" font-family="'Inter', sans-serif" font-size="10" font-weight="700" fill="#0ea5e9" text-anchor="middle">2. Specialties</text>
+      </g>
+      
+      <!-- Node 3: Approval -->
+      <g transform="translate(400, 40)">
+        <circle cx="0" cy="0" r="20" fill="#10b981" fill-opacity="0.12" />
+        <circle cx="0" cy="0" r="14" fill="#10b981" />
+        <!-- Badge/Verified Shield -->
+        <path d="M -5,-4 L 0,-6.5 L 5,-4 L 5,1 C 5,3.5 0,6 0,6 C 0,6 -5,3.5 -5,1 Z" fill="none" stroke="#ffffff" stroke-width="1.5" />
+        <text x="0" y="30" font-family="'Inter', sans-serif" font-size="10" font-weight="700" fill="#10b981" text-anchor="middle">3. Approval</text>
+      </g>
+    </svg>
     <h2 class="page-title">Instructor Registration</h2>
     <p class="text-muted">Join our team of educators. Fill in your professional details below.</p>
   </div>

@@ -28,7 +28,7 @@ require_once __DIR__ . '/includes/seo.php';
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
-<link href="assets/css/app.css?v=20260607-nav2" rel="stylesheet">
+<link href="assets/css/app.css?v=20260624-auth-fix" rel="stylesheet">
 </head>
 <body style="background:var(--surface)">
 
@@ -39,6 +39,50 @@ require_once __DIR__ . '/includes/seo.php';
 
   <!-- Header -->
   <div class="text-center mb-4">
+    <!-- Winding pathway SVG -->
+    <svg class="svg-float mb-3" width="100%" height="100" viewBox="0 0 600 100" xmlns="http://www.w3.org/2000/svg" style="max-width: 500px; margin: 0 auto; display: block;">
+      <defs>
+        <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#4f46e5" />
+          <stop offset="50%" stop-color="#a855f7" />
+          <stop offset="100%" stop-color="#06b6d4" />
+        </linearGradient>
+      </defs>
+      <!-- Connection Line -->
+      <path d="M 100 50 Q 200 15, 300 50 T 500 50" fill="none" stroke="url(#lineGrad)" stroke-width="4" stroke-linecap="round" stroke-dasharray="8 6" />
+      
+      <!-- Node 1: Register -->
+      <g transform="translate(100, 50)">
+        <circle cx="0" cy="0" r="22" fill="#4f46e5" fill-opacity="0.12" />
+        <circle cx="0" cy="0" r="15" fill="#4f46e5" />
+        <!-- Head -->
+        <circle cx="0" cy="-3.5" r="4" fill="#ffffff" />
+        <!-- Shoulders -->
+        <path d="M -6.5,5.5 C -6.5,2.5 -3.5,2.2 0,2.2 C 3.5,2.2 6.5,2.5 6.5,5.5 Z" fill="#ffffff" />
+        <text x="0" y="34" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#4f46e5" text-anchor="middle">1. Register</text>
+      </g>
+      
+      <!-- Node 2: Learn -->
+      <g transform="translate(300, 50)">
+        <circle cx="0" cy="0" r="22" fill="#a855f7" fill-opacity="0.12" />
+        <circle cx="0" cy="0" r="15" fill="#a855f7" />
+        <!-- Open Book -->
+        <path d="M -6.5,-5 L 0,-1.5 L 6.5,-5 L 6.5,3.5 L 0,7 L -6.5,3.5 Z M 0,-1.5 L 0,7" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <text x="0" y="34" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#a855f7" text-anchor="middle">2. Learn Skills</text>
+      </g>
+      
+      <!-- Node 3: Graduate -->
+      <g transform="translate(500, 50)">
+        <circle cx="0" cy="0" r="22" fill="#06b6d4" fill-opacity="0.12" />
+        <circle cx="0" cy="0" r="15" fill="#06b6d4" />
+        <!-- Graduation Cap -->
+        <path d="M -8.5,-2.5 L 0,-6.5 L 8.5,-2.5 L 0,1.5 Z" fill="#ffffff" />
+        <path d="M -4.5,-0.5 L -4.5,3 C -4.5,4.5 4.5,4.5 4.5,3 L 4.5,-0.5" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" />
+        <line x1="8.5" y1="-2.5" x2="8.5" y2="4.5" stroke="#ffffff" stroke-width="1.2" />
+        <circle cx="8.5" cy="4.5" r="1.5" fill="#ffffff" />
+        <text x="0" y="34" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#06b6d4" text-anchor="middle">3. Graduate</text>
+      </g>
+    </svg>
     <h1 class="page-title" style="font-size:1.75rem">Student Registration</h1>
     <p class="text-muted">Fill in your details to enroll in a course at Mirror Age Concepts</p>
   </div>

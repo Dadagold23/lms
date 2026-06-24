@@ -81,8 +81,8 @@ if ($isAdminContext) {
               <i class="fa fa-bars"></i>
             </button>
           <?php endif; ?>
-          <a href="dashboard.php" class="brand text-decoration-none">
-            <div style="width:32px;height:32px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.9rem">G</div>
+          <a href="dashboard.php" class="brand text-decoration-none d-flex align-items-center gap-2">
+            <?= getBrandLogoSvg(32) ?>
             <span>Grafix<span style="color:var(--brand)">@Mirror</span></span>
           </a>
         </div>
