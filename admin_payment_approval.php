@@ -147,6 +147,7 @@ require_once __DIR__ . '/includes/seo.php';
   body{background:#f7fbff;font-family:Inter,system-ui}
   .card{border-radius:14px}
 </style>
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 <body>
 
@@ -162,9 +163,7 @@ require_once __DIR__ . '/includes/seo.php';
 
 <div class="container py-4">
 
-  <?php if ($flash): ?>
-    <div class="alert alert-info"><?= e($flash) ?></div>
-  <?php endif; ?>
+  <!-- Flash alert replaced with SweetAlert2 -->
 
   <div class="card p-4">
     <h5 class="mb-3">Pending Manual Payments</h5>
@@ -203,14 +202,15 @@ require_once __DIR__ . '/includes/seo.php';
               <td><?= e($p['reference'] ?? '') ?></td>
               <td><?= e(date('Y-m-d H:i', strtotime((string)$p['created_at']))) ?></td>
               <td>
-                <form method="post" class="d-flex gap-2">
+                <form method="post" class="d-flex gap-2 payment-approval-form">
                   <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                   <input type="hidden" name="payment_id" value="<?= (int)$p['id'] ?>">
+                  <input type="hidden" name="action" class="form-action-input" value="">
 
-                  <input class="form-control form-control-sm" name="manual_note" placeholder="Note (optional)">
+                  <input class="form-control form-control-sm manual-note-input" name="manual_note" placeholder="Note (optional)">
 
-                  <button name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
-                  <button name="action" value="reject"  class="btn btn-outline-danger btn-sm">Reject</button>
+                  <button type="button" class="btn btn-success btn-sm btn-approve" data-name="<?= e(($p['first_name'] ?? '').' '.($p['last_name'] ?? '')) ?>" data-amount="<?= formatMoney($p['amount'] ?? 0) ?>">Approve</button>
+                  <button type="button" class="btn btn-outline-danger btn-sm btn-reject" data-name="<?= e(($p['first_name'] ?? '').' '.($p['last_name'] ?? '')) ?>" data-amount="<?= formatMoney($p['amount'] ?? 0) ?>">Reject</button>
                 </form>
               </td>
             </tr>
@@ -235,5 +235,67 @@ require_once __DIR__ . '/includes/seo.php';
   </div>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+<?php if ($flash): ?>
+  Swal.fire({
+    title: 'Notification',
+    text: <?= json_encode($flash) ?>,
+    icon: 'info',
+    confirmButtonColor: '#4f46e5'
+  });
+<?php endif; ?>
+
+document.querySelectorAll('.btn-approve').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    const form = this.closest('form');
+    const studentName = this.getAttribute('data-name');
+    const amount = this.getAttribute('data-amount');
+    
+    Swal.fire({
+      title: 'Approve Payment?',
+      text: `Are you sure you want to approve the manual payment of ${amount} from ${studentName}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#198754',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, approve',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.querySelector('.form-action-input').value = 'approve';
+        form.submit();
+      }
+    });
+  });
+});
+
+document.querySelectorAll('.btn-reject').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    const form = this.closest('form');
+    const studentName = this.getAttribute('data-name');
+    const amount = this.getAttribute('data-amount');
+    const note = form.querySelector('.manual-note-input').value;
+    
+    Swal.fire({
+      title: 'Reject Payment?',
+      text: `Are you sure you want to reject the manual payment of ${amount} from ${studentName}? ${note ? 'Reason: ' + note : ''}`,
+      icon: 'error',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, reject',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        form.querySelector('.form-action-input').value = 'reject';
+        form.submit();
+      }
+    });
+  });
+});
+</script>
 </body>
 </html>

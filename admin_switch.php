@@ -7,12 +7,15 @@ require_once __DIR__ . '/config/db.php';
 
 requireAdminLogin();
 
+$flashError = $_SESSION['switch_error'] ?? null;
+unset($_SESSION['switch_error']);
+
 /* ── Handle switch action ── */
 if (isset($_GET['student_id'])) {
     $studentId = (int)$_GET['student_id'];
     if ($studentId <= 0) {
-        http_response_code(400);
-        exit('Invalid student ID.');
+        $_SESSION['switch_error'] = 'Invalid student ID.';
+        redirect('admin_switch.php');
     }
 
     $stmt = $pdo->prepare("SELECT id, first_name, last_name, email, role, status FROM lms_students WHERE id=? LIMIT 1");
@@ -20,16 +23,16 @@ if (isset($_GET['student_id'])) {
     $student = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$student) {
-        http_response_code(404);
-        exit('Student not found.');
+        $_SESSION['switch_error'] = 'Student not found.';
+        redirect('admin_switch.php');
     }
     if (($student['status'] ?? '') !== 'active') {
-        http_response_code(403);
-        exit('Cannot impersonate a suspended or inactive student.');
+        $_SESSION['switch_error'] = 'Cannot impersonate a suspended or inactive student.';
+        redirect('admin_switch.php');
     }
     if (($student['role'] ?? 'student') !== 'student') {
-        http_response_code(403);
-        exit('You can only impersonate student accounts.');
+        $_SESSION['switch_error'] = 'You can only impersonate student accounts.';
+        redirect('admin_switch.php');
     }
 
     // Backup admin session
@@ -89,6 +92,7 @@ require_once __DIR__ . '/includes/seo.php';
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 <link href="assets/css/app.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 <body style="background:var(--surface)">
 
@@ -145,9 +149,11 @@ require_once __DIR__ . '/includes/seo.php';
               <td class="text-muted" style="font-size:.82rem"><?= e(date('d M Y', strtotime($s['created_at']))) ?></td>
               <td>
                 <?php if ($st === 'active'): ?>
-                  <a href="admin_switch.php?student_id=<?= (int)$s['id'] ?>"
-                     class="btn-brand" style="font-size:.8rem;padding:.35rem .8rem"
-                     onclick="return confirm('Switch to <?= e(addslashes($s['first_name'])) ?>?')">
+                  <a href="#"
+                     class="btn-brand btn-switch-user"
+                     data-id="<?= (int)$s['id'] ?>"
+                     data-name="<?= e($s['first_name'] . ' ' . $s['last_name']) ?>"
+                     style="font-size:.8rem;padding:.35rem .8rem">
                     <i class="fa fa-sign-in-alt me-1"></i> Switch
                   </a>
                 <?php else: ?>
@@ -162,5 +168,40 @@ require_once __DIR__ . '/includes/seo.php';
   <?php endif; ?>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+<?php if ($flashError): ?>
+  Swal.fire({
+    title: 'Access Denied',
+    text: <?= json_encode($flashError) ?>,
+    icon: 'error',
+    confirmButtonColor: '#ef4444'
+  });
+<?php endif; ?>
+
+document.querySelectorAll('.btn-switch-user').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    const studentId = this.getAttribute('data-id');
+    const studentName = this.getAttribute('data-name');
+    
+    Swal.fire({
+      title: 'Switch User Account',
+      text: `Are you sure you want to impersonate and login as student "${studentName}"?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Yes, switch account',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `admin_switch.php?student_id=${studentId}`;
+      }
+    });
+  });
+});
+</script>
 </body>
 </html>

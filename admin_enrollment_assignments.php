@@ -187,6 +187,7 @@ body { background: #f0f4ff; font-family: Inter, system-ui; }
   font-size: .78rem; font-weight: 700;
 }
 </style>
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 </head>
 <body>
 
@@ -223,12 +224,7 @@ body { background: #f0f4ff; font-family: Inter, system-ui; }
     </div>
   </div>
 
-  <?php if ($flash): ?>
-    <div class="alert alert-<?= e($flash['type']) ?> alert-dismissible mb-3">
-      <?= e($flash['msg']) ?>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-  <?php endif; ?>
+  <!-- Flash alert replaced with SweetAlert2 -->
 
   <!-- Filter -->
   <div class="filter-card">
@@ -380,5 +376,16 @@ body { background: #f0f4ff; font-family: Inter, system-ui; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+<?php if ($flash): ?>
+  Swal.fire({
+    title: '<?= $flash['type'] === 'success' ? 'Success!' : 'Error!' ?>',
+    text: <?= json_encode($flash['msg']) ?>,
+    icon: '<?= $flash['type'] === 'success' ? 'success' : 'error' ?>',
+    confirmButtonColor: '<?= $flash['type'] === 'success' ? '#4f46e5' : '#ef4444' ?>'
+  });
+<?php endif; ?>
+</script>
 </body>
 </html>
