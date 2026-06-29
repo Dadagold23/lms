@@ -355,9 +355,12 @@ require_once dirname(dirname(__DIR__)) . '/includes/seo.php';
                 <div class="mb-3">
                   <label for="partner_password" class="form-label fw-semibold">Access Password <span class="text-danger">*</span></label>
                   <input type="password" class="form-control py-2.5" id="partner_password" name="partner_password" required placeholder="••••••••">
-                  <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" id="show_partner_password">
-                    <label class="form-check-label small text-muted" for="show_partner_password">Show Password</label>
+                  <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="show_partner_password">
+                      <label class="form-check-label small text-muted" for="show_partner_password">Show Password</label>
+                    </div>
+                    <a href="../forgot_password.php" class="small text-decoration-none text-muted">Forgot password?</a>
                   </div>
                 </div>
 
