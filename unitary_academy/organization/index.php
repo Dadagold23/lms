@@ -1177,24 +1177,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function showAlert(type, message) {
-    // Remove any existing alerts first
-    const existingAlerts = document.querySelectorAll('section.py-4 .container .alert-dismissible');
-    existingAlerts.forEach(a => a.remove());
-
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show mb-4 shadow-sm`;
-    alertDiv.role = 'alert';
-    alertDiv.innerHTML = `
-      <i class="fa fa-${type === 'success' ? 'circle-check' : 'circle-exclamation'} me-2"></i>
-      ${escapeHtml(message)}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    const container = document.querySelector('section.py-4 .container');
-    if (container) {
-      container.insertBefore(alertDiv, container.querySelector('.row.g-4'));
-      // Scroll to alert
-      alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+    Swal.fire({
+      icon: type === 'danger' ? 'error' : (type === 'success' ? 'success' : 'info'),
+      title: type === 'danger' ? 'Error' : (type === 'success' ? 'Success' : 'Notification'),
+      text: message,
+      confirmButtonColor: '#0d9488'
+    });
   }
 
   function escapeHtml(str) {
