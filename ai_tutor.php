@@ -567,7 +567,7 @@ require_once __DIR__ . '/includes/seo.php';
     foreach ($suggestions as $s):
     ?>
       <button class="btn-ghost" style="font-size:.78rem;padding:.3rem .7rem"
-              onclick="document.getElementById('msgInput').value=<?= json_encode($s) ?>;sendMsg()">
+              onclick="document.getElementById('msgInput').value=<?= e(json_encode($s)) ?>;sendMsg()">
         <?= e($s) ?>
       </button>
     <?php endforeach; ?>
