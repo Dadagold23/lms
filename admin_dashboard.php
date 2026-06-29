@@ -82,6 +82,7 @@ require_once __DIR__ . '/includes/seo.php';
     <div class="nav-section">Management</div>
     <a href="admin_courses.php" class="nav-link"><i class="fa fa-book"></i> Courses</a>
     <a href="admin_instructors.php" class="nav-link"><i class="fa fa-chalkboard-teacher"></i> Instructors</a>
+    <a href="admin_partners.php" class="nav-link"><i class="fa fa-handshake"></i> Affiliate/Partners</a>
     <a href="admin_enrollment_assignments.php" class="nav-link">
       <i class="fa fa-user-tag"></i> Assignments
       <?php if ($stats['unassigned_enrollments'] > 0): ?>
