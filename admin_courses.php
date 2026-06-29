@@ -234,11 +234,11 @@ require_once __DIR__ . '/includes/seo.php';
         </form>
 
         <?php if ($editCourse): ?>
-          <form method="post" class="mt-3" onsubmit="return confirm('Delete this course?');">
+          <form method="post" id="deleteCourseForm" class="mt-3">
             <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
             <input type="hidden" name="action" value="delete">
             <input type="hidden" name="id" value="<?= (int)$editCourse['id'] ?>">
-            <button class="btn btn-outline-danger w-100">Delete Course</button>
+            <button type="button" onclick="confirmDeleteCourse()" class="btn btn-outline-danger w-100">Delete Course</button>
           </form>
         <?php endif; ?>
       </div>
@@ -292,5 +292,22 @@ require_once __DIR__ . '/includes/seo.php';
   </div>
 
 </div>
+<script>
+function confirmDeleteCourse() {
+  Swal.fire({
+    title: 'Delete this course?',
+    text: 'Are you sure you want to delete this course? This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById('deleteCourseForm').submit();
+    }
+  });
+}
+</script>
 </body>
 </html>

@@ -297,7 +297,7 @@ require_once __DIR__ . '/includes/seo.php';
                           <a href="admin_affiliate_courses.php?edit=<?= (int)$c['id'] ?>" class="btn btn-outline-primary btn-sm px-2" style="border-radius: 6px;" title="Edit">
                             <i class="fa fa-edit"></i>
                           </a>
-                          <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this course? This will delete all linked schemes of work.');">
+                          <form method="post" class="d-inline" onsubmit="confirmDeleteAffiliateCourse(event, this);">
                             <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="id" value="<?= (int)$c['id'] ?>">
@@ -320,5 +320,23 @@ require_once __DIR__ . '/includes/seo.php';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function confirmDeleteAffiliateCourse(event, form) {
+  event.preventDefault();
+  Swal.fire({
+    title: 'Delete this course?',
+    text: 'Are you sure you want to delete this course? This will delete all linked schemes of work.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      form.submit();
+    }
+  });
+}
+</script>
 </body>
 </html>

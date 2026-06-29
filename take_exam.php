@@ -102,6 +102,7 @@ require_once __DIR__ . '/includes/seo.php';
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 <link href="assets/css/app.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body style="background:var(--surface)">
 <nav class="lms-nav">
@@ -203,8 +204,7 @@ require_once __DIR__ . '/includes/seo.php';
           <i class="fa fa-info-circle me-1"></i>
           Attempt <?= $attemptCount+1 ?> of <?= $MAX_ATTEMPTS ?>. Answer all questions before submitting.
         </div>
-        <button type="submit" class="btn-brand" style="padding:.75rem 2rem;font-size:1rem"
-                onclick="return confirm('Submit exam? This uses attempt <?= $attemptCount+1 ?> of <?= $MAX_ATTEMPTS ?>.')">
+        <button type="button" id="submitExamBtn" class="btn-brand" style="padding:.75rem 2rem;font-size:1rem">
           <i class="fa fa-paper-plane me-1"></i> Submit Exam
         </button>
       </div>
@@ -212,6 +212,24 @@ require_once __DIR__ . '/includes/seo.php';
   <?php endif; ?>
 </div>
 <script>
+document.getElementById('submitExamBtn')?.addEventListener('click', function(e) {
+  e.preventDefault();
+  Swal.fire({
+    title: 'Submit Exam?',
+    text: 'This uses attempt <?= $attemptCount+1 ?> of <?= $MAX_ATTEMPTS ?>.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#4f46e5',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Yes, submit!',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById('examForm').submit();
+    }
+  });
+});
+
 <?php if ($attemptsLeft>0 && $questions): ?>
 const SECS = <?= (int)$exam['duration_minutes'] ?> * 60;
 let rem = SECS;
@@ -221,7 +239,18 @@ if(el) el.textContent = fmt(rem);
 const iv = setInterval(()=>{
   rem--;
   if(el){el.textContent=fmt(rem);el.style.color=rem<60?'var(--danger)':'var(--brand)';}
-  if(rem<=0){clearInterval(iv);alert('Time is up!');document.getElementById('examForm')?.submit();}
+  if(rem<=0){
+    clearInterval(iv);
+    Swal.fire({
+      title: 'Time is up!',
+      text: 'Your exam is being submitted automatically.',
+      icon: 'warning',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#4f46e5'
+    }).then(() => {
+      document.getElementById('examForm')?.submit();
+    });
+  }
 },1000);
 <?php endif; ?>
 </script>

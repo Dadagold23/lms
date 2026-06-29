@@ -447,7 +447,7 @@ require_once __DIR__ . '/includes/seo.php';
             Pass mark: <?= $passPct ?>% &nbsp;·&nbsp; Attempt <?= $assessAttempts + 1 ?>
             <?php if ($assessAttempts > 0): ?>&nbsp;·&nbsp; <?= $assessAttempts ?> previous attempt<?= $assessAttempts > 1 ? 's' : '' ?><?php endif; ?>
           </div>
-          <button type="submit" class="btn-brand" onclick="return confirm('Submit assessment? Make sure you have answered all questions.')">
+          <button type="button" id="submitAssessmentBtn" class="btn-brand">
             <i class="fa fa-paper-plane me-1"></i> Submit Assessment
           </button>
         </div>
@@ -605,6 +605,24 @@ document.getElementById('lessonTutorInput')?.addEventListener('keydown', functio
     event.preventDefault();
     sendLessonTutorMessage();
   }
+});
+
+document.getElementById('submitAssessmentBtn')?.addEventListener('click', function(e) {
+  e.preventDefault();
+  Swal.fire({
+    title: 'Submit Assessment?',
+    text: 'Make sure you have answered all questions.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#4f46e5',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Yes, submit!',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById('assessForm').submit();
+    }
+  });
 });
 </script>
 </body>

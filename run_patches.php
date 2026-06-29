@@ -8,6 +8,12 @@ declare(strict_types=1);
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/config/db.php';
 
+// Block access in production
+if (($_ENV['APP_ENV'] ?? 'production') !== 'local') {
+    http_response_code(404);
+    exit('Not found.');
+}
+
 $patches = [
     'database/migrate_new_tables.sql'          => 'New tables (lesson completions, instructor bio, course assignments)',
     'database/migrate_enrollment_payment_type.sql' => 'Enrollment payment_type column + status enum fix',

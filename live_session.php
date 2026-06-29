@@ -172,9 +172,9 @@ require_once __DIR__ . '/includes/seo.php';
 
             <div class="mt-auto d-flex gap-2 flex-wrap">
               <?php if ($canJoin): ?>
-                <a href="live_session.php?join=<?= (int)$s['id'] ?>"
+                <a href="#"
                    class="btn-brand"
-                   onclick="return confirm('Join this session? This counts as 1 of your 2 weekly sessions.')">
+                   onclick="confirmJoinSession(event, 'live_session.php?join=<?= (int)$s['id'] ?>')">
                   <i class="fa fa-sign-in-alt me-1"></i>
                   <?= $isLive ? 'Enter Classroom' : 'Open Classroom' ?>
                 </a>
@@ -218,5 +218,24 @@ require_once __DIR__ . '/includes/seo.php';
 <style>
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 </style>
+<script>
+function confirmJoinSession(event, url) {
+  event.preventDefault();
+  Swal.fire({
+    title: 'Join Live Session?',
+    text: 'Join this session? This counts as 1 of your 2 weekly sessions.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#4f46e5',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Yes, join!',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      window.location.href = url;
+    }
+  });
+}
+</script>
 </body>
 </html>
