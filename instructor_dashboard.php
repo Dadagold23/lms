@@ -340,6 +340,9 @@ function loadSOW() {
         return;
       }
 
+      // Store globally
+      window.currentSowRows = data.rows;
+
       let html = `
         <div class="mb-3" style="font-size:.9rem;font-weight:600;color:var(--text)">
           ${escSOW(data.course_title)} &mdash; ${escSOW(data.class_level.replace('JSS','JSS ').replace('SSS','SSS '))} &mdash; ${escSOW(data.term)} Term
@@ -347,14 +350,31 @@ function loadSOW() {
         </div>
         <div style="overflow-x:auto;" id="sowPrintArea">
           <table class="lms-table">
-            <thead><tr><th style="width:60px">Week</th><th>Topic</th><th class="d-none d-md-table-cell">Objectives</th><th class="d-none d-lg-table-cell">Activities</th></tr></thead>
+            <thead><tr><th style="width:60px">Week</th><th>Topic & Objectives</th><th class="d-none d-lg-table-cell">Activities</th><th style="width:180px" class="text-end">Lecture Status / Action</th></tr></thead>
             <tbody>`;
       data.rows.forEach(row => {
+        const hasLecture = row.lecture_content && row.lecture_content.trim() !== '';
+        const statusBadge = hasLecture 
+          ? `<span class="badge bg-success text-white small" style="cursor:pointer;" onclick="viewLecture(${row.id})"><i class="fa fa-check me-1"></i>Doctored</span>`
+          : `<span class="badge bg-warning text-dark small"><i class="fa fa-clock me-1"></i>Pending</span>`;
+        
+        const actionBtn = `<button onclick="triggerDoctorLecture(${row.id}, this)" class="btn btn-sm btn-outline-primary py-1 px-2 fw-semibold" style="font-size:.78rem; border-radius:6px; background: #fff;">
+          <i class="fa fa-magic me-1"></i> AI Doctor
+        </button>`;
+
         html += `<tr>
           <td class="text-center fw-bold" style="color:var(--brand)">${row.week_number}</td>
-          <td style="font-weight:500">${escSOW(row.topic)}</td>
-          <td class="d-none d-md-table-cell" style="font-size:.8rem;color:var(--muted)">${row.objectives}</td>
+          <td>
+            <div style="font-weight:600; color: var(--text);">${escSOW(row.topic)}</div>
+            <div class="small text-muted d-none d-md-block">${row.objectives}</div>
+          </td>
           <td class="d-none d-lg-table-cell" style="font-size:.8rem;color:var(--muted)">${row.activities}</td>
+          <td class="text-end">
+            <div class="d-flex align-items-center justify-content-end gap-2">
+              ${statusBadge}
+              ${actionBtn}
+            </div>
+          </td>
         </tr>`;
       });
       html += '</tbody></table></div>';
@@ -378,6 +398,93 @@ function printSOW() {
   win.document.write('<script>window.onload=function(){window.print();window.close();}<\/script>');
   win.document.write('</body></html>');
   win.document.close();
+}
+
+function triggerDoctorLecture(sowId, btn) {
+  Swal.fire({
+    title: 'AI Doctor Lecture Notes?',
+    text: "This will compile structured lecture notes and generate 3 corresponding quiz questions automatically for this SOW topic.",
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, generate',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#4f46e5'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: 'Doctoring Lecture...',
+        text: 'Generating structured syllabus notes and quiz items via the AI SOW engine. Please wait.',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const formData = new FormData();
+      formData.append('_csrf', '<?= csrfToken() ?>');
+      formData.append('sow_id', sowId);
+
+      fetch('ajax_doctor_lecture.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          Swal.fire({
+            title: 'Doctored!',
+            text: data.message || 'Lecture compiled successfully.',
+            icon: 'success'
+          }).then(() => {
+            loadSOW(); // reload grid
+          });
+        } else {
+          Swal.fire('Error', data.message || 'Generation failed.', 'error');
+        }
+      })
+      .catch(err => {
+        Swal.fire('Error', 'Network error or server failed.', 'error');
+      });
+    }
+  });
+}
+
+function viewLecture(sowId) {
+  if (!window.currentSowRows) return;
+  const row = window.currentSowRows.find(r => r.id == sowId);
+  if (!row) return;
+
+  let quizHtml = '';
+  if (row.quiz_json) {
+    try {
+      const q = JSON.parse(row.quiz_json);
+      quizHtml = `<hr><h6 class="fw-bold mt-3 text-indigo"><i class="fa fa-question-circle me-2"></i>Doctored Assessment (${escSOW(q.title || 'Quiz')})</h6>`;
+      if (q.questions && q.questions.length > 0) {
+        q.questions.forEach((question, idx) => {
+          quizHtml += `<div class="mb-2 p-2 border rounded bg-light" style="font-size: .82rem;">
+            <strong>Q${idx+1}: ${escSOW(question.question)}</strong><br>
+            A: ${escSOW(question.option_a)} | B: ${escSOW(question.option_b)} | C: ${escSOW(question.option_c)} | D: ${escSOW(question.option_d)}<br>
+            <span class="text-success fw-bold">Correct Option: ${escSOW(question.correct_option)}</span>
+          </div>`;
+        });
+      }
+    } catch(e) {
+      quizHtml = `<hr><p class="text-danger small">Invalid Quiz JSON.</p>`;
+    }
+  }
+
+  Swal.fire({
+    title: `<span style="font-size: 1.1rem; font-weight:700;">${escSOW(row.topic)}</span>`,
+    html: `
+      <div class="text-start" style="max-height: 420px; overflow-y: auto; font-size: .88rem; line-height: 1.6;">
+        <h6 class="fw-bold text-dark"><i class="fa fa-book-reader text-primary me-2"></i>Doctored Lecture Notes</h6>
+        <div class="p-3 border rounded bg-white mb-3" style="white-space: pre-wrap; font-family: Inter, sans-serif; background: #fafafa;">${escSOW(row.lecture_content || 'No notes generated yet.')}</div>
+        ${quizHtml}
+      </div>
+    `,
+    confirmButtonText: 'Close',
+    width: '650px'
+  });
 }
 
 function escSOW(str) {

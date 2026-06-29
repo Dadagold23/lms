@@ -782,7 +782,59 @@ if (!function_exists('getAffiliateCurriculum')) {
 if (!function_exists('getAffiliateLessonsForCourse')) {
     function getAffiliateLessonsForCourse($pdo, $courseId, string $classLevel): array
     {
-        $customCurriculum = getAffiliateCurriculum($classLevel);
+        // Fetch SOW from DB first
+        $stmtSow = $pdo->prepare("
+            SELECT id AS sow_id, topic, objectives, activities, lecture_content, quiz_json
+            FROM lms_affiliate_scheme_of_work
+            WHERE course_id = ? AND class_level = ?
+            ORDER BY week_number ASC
+            LIMIT 5
+        ");
+        $stmtSow->execute([(int)$courseId, $classLevel]);
+        $dbSow = $stmtSow->fetchAll(PDO::FETCH_ASSOC);
+
+        $customCurriculum = [];
+        if (!empty($dbSow)) {
+            foreach ($dbSow as $index => $w) {
+                // Parse quiz JSON
+                $assessment = null;
+                if (!empty($w['quiz_json'])) {
+                    $assessment = json_decode($w['quiz_json'], true);
+                }
+                
+                // Fallback assessment if empty
+                if (!$assessment) {
+                    $assessment = [
+                        'id' => $w['sow_id'] * 100 + 1,
+                        'title' => $w['topic'] . ' Quiz',
+                        'instructions' => 'Choose correct answers.',
+                        'pass_score' => 50,
+                        'questions' => [
+                            [
+                                'id' => $w['sow_id'] * 1000 + 1,
+                                'question' => 'Is this topic related to ' . $w['topic'] . '?',
+                                'option_a' => 'Yes',
+                                'option_b' => 'No',
+                                'option_c' => 'Maybe',
+                                'option_d' => 'Not sure',
+                                'correct_option' => 'A'
+                            ]
+                        ]
+                    ];
+                }
+
+                $customCurriculum[] = [
+                    'id' => $w['sow_id'],
+                    'sort_order' => $index + 1,
+                    'title' => 'Lesson ' . ($index + 1) . ': ' . $w['topic'],
+                    'content' => $w['lecture_content'] ?: "#### Topic Overview\n\n" . $w['topic'] . "\n\n#### Objectives\n" . $w['objectives'],
+                    'assessment' => $assessment
+                ];
+            }
+        } else {
+            $customCurriculum = getAffiliateCurriculum($classLevel);
+        }
+
         if (!$customCurriculum) {
             return [];
         }
@@ -810,10 +862,12 @@ if (!function_exists('getAffiliateLessonsForCourse')) {
             // Update assessment ID to match the database lesson ID for indexing
             if (isset($lesson['assessment'])) {
                 $lesson['assessment']['id'] = $dbLessonId * 100 + 1; // Unique, deterministic ID
-                foreach ($lesson['assessment']['questions'] as $qIdx => &$q) {
-                    $q['id'] = $dbLessonId * 1000 + $qIdx + 1; // Unique, deterministic question IDs
+                if (isset($lesson['assessment']['questions']) && is_array($lesson['assessment']['questions'])) {
+                    foreach ($lesson['assessment']['questions'] as $qIdx => &$q) {
+                        $q['id'] = $dbLessonId * 1000 + $qIdx + 1; // Unique, deterministic question IDs
+                    }
+                    unset($q); // break reference
                 }
-                unset($q); // break reference
             }
 
             $mappedLessons[] = $lesson;

@@ -34,9 +34,8 @@ try {
         exit;
     }
 
-    // Fetch scheme of work
     $stmt = $pdo->prepare("
-        SELECT week_number, topic, objectives, activities
+        SELECT id, week_number, topic, objectives, activities, lecture_content, quiz_json
         FROM lms_affiliate_scheme_of_work
         WHERE course_id = ? AND class_level = ? AND term = ?
         ORDER BY week_number ASC
