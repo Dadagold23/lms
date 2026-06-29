@@ -51,6 +51,17 @@ $courseId = (int)$course['id'];
 
 $price = (float)($course['price'] ?? 0);
 
+// Fetch student's affiliate info to apply price cap
+$st = $pdo->prepare("SELECT is_affiliate, affiliate_class_range FROM lms_students WHERE id = ? LIMIT 1");
+$st->execute([$studentId]);
+$student = $st->fetch() ?: [];
+$isAffiliate = !empty($student['is_affiliate']);
+$classRange  = $student['affiliate_class_range'] ?? '';
+
+if ($isAffiliate && ($classRange === 'JSS' || $classRange === 'SSS')) {
+    $price = min($price, 5000.0);
+}
+
 /* ── Enrollment ── */
 $en = $pdo->prepare("SELECT id,paid_amount,payment_type,status,next_due_date,access_expires_at,created_at FROM lms_enrollments WHERE student_id=? AND course_id=? LIMIT 1");
 $en->execute([$studentId, $courseId]);

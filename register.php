@@ -13,6 +13,50 @@ $year = date('Y');
 $countries = $pdo->query("SELECT iso2, name FROM ref_countries ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 $courses   = $pdo->query("SELECT id, title, price FROM lms_courses WHERE is_active = 1 ORDER BY title")->fetchAll(PDO::FETCH_ASSOC);
 $selectedCourseId = (int)($_GET['course_id'] ?? 0);
+$refToken = $_GET['ref_token'] ?? '';
+$referral = null;
+$prefilledFirstName = '';
+$prefilledLastName = '';
+$isAffiliate = false;
+$affiliateCourseId = 0;
+$affiliateCourses = [];
+$selectedAffiliateCourse = null;
+
+if ($refToken !== '') {
+    $stmt = $pdo->prepare("SELECT * FROM lms_affiliate_referrals WHERE referral_token = ? AND status = 'pending_enrollment'");
+    $stmt->execute([$refToken]);
+    $referral = $stmt->fetch();
+    if ($referral) {
+        $isAffiliate = true;
+        $selectedCourseId = (int)$referral['course_id'];
+        $parts = explode(' ', trim($referral['pupil_name']), 2);
+        $prefilledFirstName = $parts[0] ?? '';
+        $prefilledLastName = $parts[1] ?? '';
+
+        // Load affiliate course list
+        $affiliateCourses = $pdo->query("SELECT id, title, price FROM lms_affiliate_courses WHERE is_active = 1 ORDER BY title")->fetchAll(PDO::FETCH_ASSOC);
+
+        // Try to match the referral's normal course to an affiliate course by title
+        $refCourseTitle = '';
+        if ($selectedCourseId > 0) {
+            $cStmt = $pdo->prepare("SELECT title FROM lms_courses WHERE id = ? LIMIT 1");
+            $cStmt->execute([$selectedCourseId]);
+            $refCourseTitle = (string)($cStmt->fetchColumn() ?: '');
+        }
+        foreach ($affiliateCourses as $ac) {
+            if (strtolower($ac['title']) === strtolower($refCourseTitle)) {
+                $affiliateCourseId = (int)$ac['id'];
+                $selectedAffiliateCourse = $ac;
+                break;
+            }
+        }
+        // Fallback: first course
+        if ($affiliateCourseId === 0 && !empty($affiliateCourses)) {
+            $affiliateCourseId = (int)$affiliateCourses[0]['id'];
+            $selectedAffiliateCourse = $affiliateCourses[0];
+        }
+    }
+}
 $publicNavCourses = $courses;
 ?>
 <!doctype html>
@@ -93,8 +137,31 @@ require_once __DIR__ . '/includes/seo.php';
     </div>
   <?php endif; ?>
 
+  <?php if ($isAffiliate): ?>
+  <div class="lms-card mb-4" style="background:linear-gradient(135deg,#0d1b2a,#1a3a5c);color:#fff;border:2px solid #0d9488;">
+    <div class="d-flex align-items-center gap-3">
+      <div style="width:48px;height:48px;background:rgba(13,148,136,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <i class="fa fa-graduation-cap text-info fs-4"></i>
+      </div>
+      <div>
+        <div class="fw-bold fs-6 text-white"><i class="fa fa-link me-1 text-info"></i>Affiliate Student Registration</div>
+        <div class="small text-white-50">You were referred by an affiliate partner. Your course and class level will be assigned based on your date of birth.</div>
+      </div>
+    </div>
+    <div id="ageRangeBanner" class="mt-3 p-2 rounded" style="background:rgba(13,148,136,0.15);display:none;">
+      <i class="fa fa-info-circle text-info me-1"></i>
+      <span id="ageRangeText" class="small text-white"></span>
+    </div>
+  </div>
+  <?php endif; ?>
+
   <form method="post" action="register_handler.php" enctype="multipart/form-data" autocomplete="off" id="regForm">
     <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
+    <?php if ($referral): ?>
+      <input type="hidden" name="ref_token" value="<?= e($refToken) ?>">
+      <input type="hidden" name="is_affiliate" value="1">
+      <input type="hidden" name="affiliate_course_id" id="hAffiliateCourseId" value="<?= $affiliateCourseId ?>">
+    <?php endif; ?>
 
     <!-- PERSONAL INFO -->
     <div class="lms-card mb-4">
@@ -102,11 +169,11 @@ require_once __DIR__ . '/includes/seo.php';
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label">First Name <span style="color:var(--danger)">*</span></label>
-          <input name="first_name" class="form-control" placeholder="John" required>
+          <input name="first_name" class="form-control" placeholder="John" required <?= $referral ? 'value="' . e($prefilledFirstName) . '"' : '' ?>>
         </div>
         <div class="col-md-4">
           <label class="form-label">Last Name <span style="color:var(--danger)">*</span></label>
-          <input name="last_name" class="form-control" placeholder="Doe" required>
+          <input name="last_name" class="form-control" placeholder="Doe" required <?= $referral ? 'value="' . e($prefilledLastName) . '"' : '' ?>>
         </div>
         <div class="col-md-4">
           <label class="form-label">Other Names</label>
@@ -114,7 +181,13 @@ require_once __DIR__ . '/includes/seo.php';
         </div>
         <div class="col-md-4">
           <label class="form-label">Date of Birth <span style="color:var(--danger)">*</span></label>
-          <input type="date" name="dob" class="form-control" required>
+          <input type="date" name="dob" class="form-control" required <?= $referral ? 'value="' . e($referral['pupil_dob']) . '"' : '' ?>>
+        </div>
+        <div class="col-md-8 d-none" id="affiliateClassSelectorContainer">
+          <label class="form-label d-block fw-bold text-info">Class Level Placement <span style="color:var(--danger)">*</span></label>
+          <div class="d-flex flex-wrap gap-3 mt-2" id="affiliateClassOptions">
+            <!-- Dynamically populated checkboxes -->
+          </div>
         </div>
         <div class="col-md-4">
           <label class="form-label">Gender <span style="color:var(--danger)">*</span></label>
@@ -131,7 +204,7 @@ require_once __DIR__ . '/includes/seo.php';
         </div>
         <div class="col-md-6">
           <label class="form-label">Email Address <span style="color:var(--danger)">*</span></label>
-          <input type="email" name="email" class="form-control" placeholder="you@example.com" required>
+          <input type="email" name="email" class="form-control" placeholder="you@example.com" required <?= $referral ? 'value="' . e($referral['pupil_email']) . '" readonly' : '' ?>>
         </div>
         <div class="col-md-6">
           <label class="form-label">Residential Address <span style="color:var(--danger)">*</span></label>
@@ -185,14 +258,37 @@ require_once __DIR__ . '/includes/seo.php';
       <div class="row g-3">
         <div class="col-md-6">
           <label class="form-label">Select Course <span style="color:var(--danger)">*</span></label>
-          <select name="course_id" id="courseSelect" class="form-select" required>
-            <option value="">Choose a course</option>
-            <?php foreach ($courses as $c): ?>
-              <option value="<?= (int)$c['id'] ?>" data-price="<?= e((string)$c['price']) ?>" <?= (int)$c['id'] === $selectedCourseId ? 'selected' : '' ?>>
-                <?= e($c['title']) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
+          <?php if ($isAffiliate && !empty($affiliateCourses)): ?>
+            <!-- Affiliate path: show affiliate courses, locked to matched course -->
+            <select name="affiliate_course_id_select" id="courseSelect" class="form-select" <?= $affiliateCourseId > 0 ? 'disabled' : '' ?>>
+              <?php foreach ($affiliateCourses as $ac): ?>
+                <option value="<?= (int)$ac['id'] ?>" data-price="<?= e((string)$ac['price']) ?>" <?= (int)$ac['id'] === $affiliateCourseId ? 'selected' : '' ?>>
+                  <?= e($ac['title']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <div class="small text-muted mt-1"><i class="fa fa-info-circle"></i> Affiliate curriculum course — assigned by partner referral.</div>
+            <!-- course_id is still needed for normal enrollment fallback (Higher track) -->
+            <input type="hidden" name="course_id" value="<?= (int)$referral['course_id'] ?>">
+          <?php elseif ($referral): ?>
+            <select name="course_id_disabled" id="courseSelect" class="form-select" disabled>
+              <?php foreach ($courses as $c): ?>
+                <option value="<?= (int)$c['id'] ?>" data-price="<?= e((string)$c['price']) ?>" <?= (int)$c['id'] === $selectedCourseId ? 'selected' : '' ?>>
+                  <?= e($c['title']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <input type="hidden" name="course_id" value="<?= (int)$referral['course_id'] ?>">
+          <?php else: ?>
+            <select name="course_id" id="courseSelect" class="form-select" required>
+              <option value="">Choose a course</option>
+              <?php foreach ($courses as $c): ?>
+                <option value="<?= (int)$c['id'] ?>" data-price="<?= e((string)$c['price']) ?>" <?= (int)$c['id'] === $selectedCourseId ? 'selected' : '' ?>>
+                  <?= e($c['title']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          <?php endif; ?>
         </div>
         <div class="col-md-3">
           <label class="form-label">Course Fee</label>
@@ -209,6 +305,7 @@ require_once __DIR__ . '/includes/seo.php';
       </div>
     </div>
 
+    <?php if (!$isAffiliate): ?>
     <!-- KYC -->
     <div class="lms-card mb-4">
       <div class="form-section-title"><i class="fa fa-id-card me-2"></i>Identity Verification (KYC)</div>
@@ -238,6 +335,7 @@ require_once __DIR__ . '/includes/seo.php';
         </div>
       </div>
     </div>
+    <?php endif; ?>
 
     <!-- PASSWORD -->
     <div class="lms-card mb-4">
@@ -292,19 +390,148 @@ function togglePwd(id, btn) {
   btn.innerHTML = show ? '<i class="fa fa-eye-slash"></i>' : '<i class="fa fa-eye"></i>';
 }
 
+/* ── Affiliate Age Routing ── */
+const dobInput = document.querySelector('input[name="dob"]');
+const ageRangeBanner = document.getElementById('ageRangeBanner');
+const ageRangeText = document.getElementById('ageRangeText');
+const isAffiliateReg = <?= $isAffiliate ? 'true' : 'false' ?>;
+
+function computeAgeRange() {
+  if (!dobInput || !isAffiliateReg) return;
+  const dob = new Date(dobInput.value);
+  if (isNaN(dob.getTime())) { 
+    if (ageRangeBanner) ageRangeBanner.style.display='none'; 
+    const selectorContainer = document.getElementById('affiliateClassSelectorContainer');
+    if (selectorContainer) selectorContainer.classList.add('d-none');
+    return; 
+  }
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+
+  let rangeLabel = '', classLevel = '';
+  const selectorContainer = document.getElementById('affiliateClassSelectorContainer');
+  const optionsDiv = document.getElementById('affiliateClassOptions');
+
+  if (age <= 11) {
+    const defaultVal = age <= 8 ? 'JSS1' : age === 9 ? 'JSS2' : 'JSS3';
+    rangeLabel = `Age ${age} → You fall in the JSS track (Junior Secondary School). Choose your class level below.`;
+    classLevel = defaultVal;
+
+    if (selectorContainer && optionsDiv) {
+      selectorContainer.classList.remove('d-none');
+      optionsDiv.innerHTML = `
+        <div class="form-check form-check-inline">
+          <input class="form-check-input affiliate-class-cb" type="checkbox" name="affiliate_class_level_cb" id="cb_jss1" value="JSS1" ${defaultVal === 'JSS1' ? 'checked' : ''}>
+          <label class="form-check-label text-dark" for="cb_jss1">JSS 1</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input affiliate-class-cb" type="checkbox" name="affiliate_class_level_cb" id="cb_jss2" value="JSS2" ${defaultVal === 'JSS2' ? 'checked' : ''}>
+          <label class="form-check-label text-dark" for="cb_jss2">JSS 2</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input affiliate-class-cb" type="checkbox" name="affiliate_class_level_cb" id="cb_jss3" value="JSS3" ${defaultVal === 'JSS3' ? 'checked' : ''}>
+          <label class="form-check-label text-dark" for="cb_jss3">JSS 3</label>
+        </div>
+      `;
+    }
+  } else if (age >= 12 && age <= 17) {
+    const defaultVal = age <= 13 ? 'SSS1' : age <= 15 ? 'SSS2' : 'SSS3';
+    rangeLabel = `Age ${age} → You fall in the SSS track (Senior Secondary School). Choose your class level below.`;
+    classLevel = defaultVal;
+
+    if (selectorContainer && optionsDiv) {
+      selectorContainer.classList.remove('d-none');
+      optionsDiv.innerHTML = `
+        <div class="form-check form-check-inline">
+          <input class="form-check-input affiliate-class-cb" type="checkbox" name="affiliate_class_level_cb" id="cb_sss1" value="SSS1" ${defaultVal === 'SSS1' ? 'checked' : ''}>
+          <label class="form-check-label text-dark" for="cb_sss1">SSS 1</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input affiliate-class-cb" type="checkbox" name="affiliate_class_level_cb" id="cb_sss2" value="SSS2" ${defaultVal === 'SSS2' ? 'checked' : ''}>
+          <label class="form-check-label text-dark" for="cb_sss2">SSS 2</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input affiliate-class-cb" type="checkbox" name="affiliate_class_level_cb" id="cb_sss3" value="SSS3" ${defaultVal === 'SSS3' ? 'checked' : ''}>
+          <label class="form-check-label text-dark" for="cb_sss3">SSS 3</label>
+        </div>
+      `;
+    }
+  } else {
+    rangeLabel = `Age ${age} → You will be enrolled in the Higher Institution track — full LMS course curriculum.`;
+    classLevel = 'Higher';
+    if (selectorContainer) selectorContainer.classList.add('d-none');
+  }
+
+  if (ageRangeBanner) { ageRangeBanner.style.display='block'; }
+  if (ageRangeText) ageRangeText.textContent = rangeLabel;
+
+  // We embed class_level as a separate hidden field
+  let clField = document.getElementById('hClassLevel');
+  if (!clField) {
+    clField = document.createElement('input');
+    clField.type = 'hidden';
+    clField.name = 'computed_class_level';
+    clField.id = 'hClassLevel';
+    dobInput.closest('form').appendChild(clField);
+  }
+  clField.value = classLevel;
+
+  // Enforce single checkbox selection on change
+  if (optionsDiv) {
+    const cbs = optionsDiv.querySelectorAll('.affiliate-class-cb');
+    cbs.forEach(cb => {
+      cb.addEventListener('change', function() {
+        if (this.checked) {
+          cbs.forEach(other => {
+            if (other !== this) other.checked = false;
+          });
+          clField.value = this.value;
+          updateCoursePrice();
+        } else {
+          // If trying to uncheck the only checked checkbox, force it to stay checked
+          const checkedCount = optionsDiv.querySelectorAll('.affiliate-class-cb:checked').length;
+          if (checkedCount === 0) {
+            this.checked = true;
+          }
+        }
+      });
+    });
+  }
+  updateCoursePrice();
+}
+
+if (dobInput) {
+  dobInput.addEventListener('change', computeAgeRange);
+  dobInput.addEventListener('input', computeAgeRange);
+  if (dobInput.value) computeAgeRange();
+}
+
 /* Course price */
 const courseSelect = document.getElementById('courseSelect');
 const coursePrice = document.getElementById('coursePrice');
 
 function updateCoursePrice() {
-  const p = courseSelect.options[courseSelect.selectedIndex]?.dataset?.price || '';
+  if (!courseSelect) return;
+  let p = courseSelect.options[courseSelect.selectedIndex]?.dataset?.price || '';
+  
+  if (isAffiliateReg) {
+    const clField = document.getElementById('hClassLevel');
+    const level = clField ? clField.value : '';
+    if (level.startsWith('JSS') || level.startsWith('SSS')) {
+      if (p !== '') {
+        p = Math.min(Number(p), 5000.0);
+      }
+    }
+  }
+
   coursePrice.value = p
     ? '\u20A6' + Number(p).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
     : '';
 }
 
-courseSelect.addEventListener('change', updateCoursePrice);
-updateCoursePrice();
+if (courseSelect) { courseSelect.addEventListener('change', updateCoursePrice); updateCoursePrice(); }
 
 /* Password strength */
 const pwd = document.getElementById('regPwd');

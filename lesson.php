@@ -15,13 +15,51 @@ $courseId  = (int)($_GET['course_id'] ?? 0); // optional hint
 
 if ($lessonId <= 0) { http_response_code(400); exit('Invalid lesson.'); }
 
-/* ── Fetch lesson ── */
-$stmt = $pdo->prepare("SELECT id, course_id, title, content, sort_order FROM lms_lessons WHERE id=? AND is_published=1 LIMIT 1");
-$stmt->execute([$lessonId]);
-$lesson = $stmt->fetch(PDO::FETCH_ASSOC);
-if (!$lesson) { http_response_code(404); exit('Lesson not found.'); }
+// Fetch student's affiliate info
+$st = $pdo->prepare("SELECT is_affiliate, affiliate_class_level FROM lms_students WHERE id = ? LIMIT 1");
+$st->execute([$studentId]);
+$student = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+$isAffiliate = !empty($student['is_affiliate']);
+$classLevel  = $student['affiliate_class_level'] ?? '';
 
-$courseId = (int)$lesson['course_id'];
+$isCustomCurriculum = $isAffiliate && in_array($classLevel, ['JSS1', 'JSS2', 'JSS3', 'SSS1', 'SSS2', 'SSS3'], true);
+
+if ($isCustomCurriculum) {
+    require_once __DIR__ . '/includes/curriculum_helpers.php';
+    
+    // Find a valid enrolled course for the student
+    if ($courseId <= 0) {
+        $stmtEnroll = $pdo->prepare("SELECT course_id FROM lms_enrollments WHERE student_id = ? LIMIT 1");
+        $stmtEnroll->execute([$studentId]);
+        $courseId = (int)($stmtEnroll->fetchColumn() ?: 0);
+    }
+    
+    if ($courseId <= 0) { http_response_code(400); exit('Invalid course context.'); }
+
+    // Fetch mapped curriculum lessons
+    $curriculum = getAffiliateLessonsForCourse($pdo, $courseId, $classLevel) ?: [];
+    
+    // Find the lesson in custom curriculum by mapped db ID
+    $lesson = null;
+    $lessonIndex = null;
+    foreach ($curriculum as $idx => $item) {
+        if ($item['id'] === $lessonId) {
+            $lesson = $item;
+            $lessonIndex = $idx;
+            break;
+        }
+    }
+    
+    if (!$lesson) { http_response_code(404); exit('Lesson not found.'); }
+} else {
+    /* ── Fetch lesson from database ── */
+    $stmt = $pdo->prepare("SELECT id, course_id, title, content, sort_order FROM lms_lessons WHERE id=? AND is_published=1 LIMIT 1");
+    $stmt->execute([$lessonId]);
+    $lesson = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$lesson) { http_response_code(404); exit('Lesson not found.'); }
+    
+    $courseId = (int)$lesson['course_id'];
+}
 
 /* ── Enrollment + access check ── */
 $en = $pdo->prepare("
@@ -41,10 +79,20 @@ $isUnlocked = (bool)$access['is_unlocked'];
 
 if (!$isUnlocked) redirect(courseUrl($enrollment));
 
-/* ── All lessons ordered for this course ── */
-$allLessons = $pdo->prepare("SELECT id, title FROM lms_lessons WHERE course_id=? AND is_published=1 ORDER BY sort_order ASC, id ASC");
-$allLessons->execute([$courseId]);
-$allLessons = $allLessons->fetchAll(PDO::FETCH_ASSOC);
+/* ── All lessons ordered ── */
+if ($isCustomCurriculum) {
+    $allLessons = [];
+    foreach ($curriculum as $item) {
+        $allLessons[] = [
+            'id' => $item['id'],
+            'title' => $item['title']
+        ];
+    }
+} else {
+    $allLessonsStmt = $pdo->prepare("SELECT id, title FROM lms_lessons WHERE course_id=? AND is_published=1 ORDER BY sort_order ASC, id ASC");
+    $allLessonsStmt->execute([$courseId]);
+    $allLessons = $allLessonsStmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 /* ── Find position of current lesson ── */
 $lessonIndex = null;
@@ -106,7 +154,9 @@ if ($lessonIndex !== null && $lessonIndex > 0) {
     }
 }
 
-$courseTitle = (string)$enrollment['course_title'];
+$courseTitle = $isCustomCurriculum
+    ? str_replace(['JSS', 'SSS'], ['JSS ', 'SSS '], $classLevel) . " Computer Science"
+    : (string)$enrollment['course_title'];
 $title       = (string)$lesson['title'];
 $content     = (string)$lesson['content'];
 
@@ -118,26 +168,45 @@ $assessPassed   = false;
 $assessAttempts = 0;
 
 try {
-    $aStmt = $pdo->prepare("SELECT * FROM lms_lesson_assessments WHERE lesson_id=? AND is_required=1 LIMIT 1");
-    $aStmt->execute([$lessonId]);
-    $assessment = $aStmt->fetch(PDO::FETCH_ASSOC);
+    if ($isCustomCurriculum) {
+        $assessment = $lesson['assessment'] ?? null;
+        if ($assessment) {
+            $assessQuestions = $assessment['questions'] ?? [];
+            $aid = (int)$assessment['id'];
+            
+            // Best result
+            $rStmt = $pdo->prepare("SELECT * FROM lms_assessment_submissions WHERE assessment_id=? AND student_id=? ORDER BY percent DESC LIMIT 1");
+            $rStmt->execute([$aid, $studentId]);
+            $assessResult = $rStmt->fetch(PDO::FETCH_ASSOC);
+            $assessPassed = $assessResult && (int)$assessResult['passed'] === 1;
 
-    if ($assessment) {
-        $aid = (int)$assessment['id'];
-        $qStmt = $pdo->prepare("SELECT * FROM lms_assessment_questions WHERE assessment_id=? ORDER BY sort_order ASC");
-        $qStmt->execute([$aid]);
-        $assessQuestions = $qStmt->fetchAll(PDO::FETCH_ASSOC);
+            // Attempt count
+            $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM lms_assessment_submissions WHERE assessment_id=? AND student_id=?");
+            $cntStmt->execute([$aid, $studentId]);
+            $assessAttempts = (int)$cntStmt->fetchColumn();
+        }
+    } else {
+        $aStmt = $pdo->prepare("SELECT * FROM lms_lesson_assessments WHERE lesson_id=? AND is_required=1 LIMIT 1");
+        $aStmt->execute([$lessonId]);
+        $assessment = $aStmt->fetch(PDO::FETCH_ASSOC);
 
-        // Best result
-        $rStmt = $pdo->prepare("SELECT * FROM lms_assessment_submissions WHERE assessment_id=? AND student_id=? ORDER BY percent DESC LIMIT 1");
-        $rStmt->execute([$aid, $studentId]);
-        $assessResult = $rStmt->fetch(PDO::FETCH_ASSOC);
-        $assessPassed = $assessResult && (int)$assessResult['passed'] === 1;
+        if ($assessment) {
+            $aid = (int)$assessment['id'];
+            $qStmt = $pdo->prepare("SELECT * FROM lms_assessment_questions WHERE assessment_id=? ORDER BY sort_order ASC");
+            $qStmt->execute([$aid]);
+            $assessQuestions = $qStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Attempt count
-        $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM lms_assessment_submissions WHERE assessment_id=? AND student_id=?");
-        $cntStmt->execute([$aid, $studentId]);
-        $assessAttempts = (int)$cntStmt->fetchColumn();
+            // Best result
+            $rStmt = $pdo->prepare("SELECT * FROM lms_assessment_submissions WHERE assessment_id=? AND student_id=? ORDER BY percent DESC LIMIT 1");
+            $rStmt->execute([$aid, $studentId]);
+            $assessResult = $rStmt->fetch(PDO::FETCH_ASSOC);
+            $assessPassed = $assessResult && (int)$assessResult['passed'] === 1;
+
+            // Attempt count
+            $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM lms_assessment_submissions WHERE assessment_id=? AND student_id=?");
+            $cntStmt->execute([$aid, $studentId]);
+            $assessAttempts = (int)$cntStmt->fetchColumn();
+        }
     }
 } catch (Throwable $e) {}
 

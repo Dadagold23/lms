@@ -104,6 +104,8 @@ require_once __DIR__ . '/includes/seo.php';
     </a>
     <div class="nav-section">Grading</div>
     <a href="instructor_grade_assignment.php" class="nav-link"><i class="fa fa-star"></i> Grade Submissions</a>
+    <div class="nav-section">Affiliate</div>
+    <a href="#sowSection" class="nav-link" onclick="document.getElementById('sowSection').scrollIntoView({behavior:'smooth'});return false;"><i class="fa fa-book-open"></i> Scheme of Work</a>
     <div class="nav-section">Settings</div>
     <a href="instructor_profile.php" class="nav-link"><i class="fa fa-user-cog"></i> Profile Settings</a>
     <div class="nav-section">Portal</div>
@@ -243,8 +245,143 @@ require_once __DIR__ . '/includes/seo.php';
       <?php endif; ?>
     </div>
 
+    <!-- ═══════ AFFILIATE SCHEME OF WORK ═══════ -->
+    <div class="lms-card mb-4" id="sowSection">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="section-title mb-0"><i class="fa fa-book-open me-2" style="color:var(--brand)"></i>Affiliate Scheme of Work</div>
+        <button id="sowPrintBtn" class="btn-ghost" style="font-size:.82rem;display:none;" onclick="printSOW()">
+          <i class="fa fa-print me-1"></i> Print
+        </button>
+      </div>
+      <p style="font-size:.85rem;color:var(--muted)" class="mb-3">Load and view the scheme of work for any affiliate course, class level, and term.</p>
+
+      <!-- Filters -->
+      <div class="row g-2 mb-4" id="sowFilters">
+        <div class="col-md-4">
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Course</label>
+          <select id="sowCourseId" class="form-select" style="font-size:.85rem;">
+            <option value="">-- Select Course --</option>
+            <?php
+              try {
+                $ac = $pdo->query("SELECT id, title FROM lms_affiliate_courses WHERE is_active=1 ORDER BY title")->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($ac as $acRow) {
+                    echo '<option value="' . (int)$acRow['id'] . '">' . htmlspecialchars($acRow['title']) . '</option>';
+                }
+              } catch (Throwable $e) {}
+            ?>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Class Level</label>
+          <select id="sowClassLevel" class="form-select" style="font-size:.85rem;">
+            <option value="">-- Select Level --</option>
+            <option value="JSS1">JSS 1</option>
+            <option value="JSS2">JSS 2</option>
+            <option value="JSS3">JSS 3</option>
+            <option value="SSS1">SSS 1</option>
+            <option value="SSS2">SSS 2</option>
+            <option value="SSS3">SSS 3</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label style="font-size:.8rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Term</label>
+          <select id="sowTerm" class="form-select" style="font-size:.85rem;">
+            <option value="">-- Select Term --</option>
+            <option value="1st">1st Term</option>
+            <option value="2nd">2nd Term</option>
+            <option value="3rd">3rd Term</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button onclick="loadSOW()" class="btn-brand w-100" style="font-size:.85rem;padding:.5rem .8rem">
+            <i class="fa fa-search me-1"></i> Load
+          </button>
+        </div>
+      </div>
+
+      <!-- Result area -->
+      <div id="sowResult">
+        <div class="text-center py-5" style="color:var(--muted);font-size:.88rem">
+          <i class="fa fa-book fa-2x mb-3 d-block" style="opacity:.3"></i>
+          Select a course, class level, and term above to view the scheme of work.
+        </div>
+      </div>
+    </div>
+    <!-- ═══════ END SOW SECTION ═══════ -->
+
   </main>
 </div>
 
-</body>
-</html>
+<script>
+function loadSOW() {
+  const courseId   = document.getElementById('sowCourseId').value;
+  const classLevel = document.getElementById('sowClassLevel').value;
+  const term       = document.getElementById('sowTerm').value;
+  const result     = document.getElementById('sowResult');
+  const printBtn   = document.getElementById('sowPrintBtn');
+
+  if (!courseId || !classLevel || !term) {
+    result.innerHTML = '<div class="lms-alert lms-alert-warning"><i class="fa fa-exclamation-triangle me-2"></i>Please select all three filters.</div>';
+    return;
+  }
+
+  result.innerHTML = '<div class="text-center py-4"><i class="fa fa-spinner fa-spin fa-2x" style="color:var(--brand)"></i><br><span style="font-size:.85rem;color:var(--muted)">Loading scheme...</span></div>';
+  printBtn.style.display = 'none';
+
+  fetch(`ajax_affiliate_scheme.php?course_id=${encodeURIComponent(courseId)}&class_level=${encodeURIComponent(classLevel)}&term=${encodeURIComponent(term)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) {
+        result.innerHTML = `<div class="lms-alert lms-alert-danger"><i class="fa fa-exclamation-circle me-2"></i>${escSOW(data.message)}</div>`;
+        return;
+      }
+      if (!data.rows || data.rows.length === 0) {
+        result.innerHTML = '<div class="text-muted text-center py-4">No scheme of work found for this selection.</div>';
+        return;
+      }
+
+      let html = `
+        <div class="mb-3" style="font-size:.9rem;font-weight:600;color:var(--text)">
+          ${escSOW(data.course_title)} &mdash; ${escSOW(data.class_level.replace('JSS','JSS ').replace('SSS','SSS '))} &mdash; ${escSOW(data.term)} Term
+          <span style="font-size:.75rem;color:var(--muted);font-weight:400;margin-left:8px">${data.rows.length} weeks</span>
+        </div>
+        <div style="overflow-x:auto;" id="sowPrintArea">
+          <table class="lms-table">
+            <thead><tr><th style="width:60px">Week</th><th>Topic</th><th class="d-none d-md-table-cell">Objectives</th><th class="d-none d-lg-table-cell">Activities</th></tr></thead>
+            <tbody>`;
+      data.rows.forEach(row => {
+        html += `<tr>
+          <td class="text-center fw-bold" style="color:var(--brand)">${row.week_number}</td>
+          <td style="font-weight:500">${escSOW(row.topic)}</td>
+          <td class="d-none d-md-table-cell" style="font-size:.8rem;color:var(--muted)">${row.objectives}</td>
+          <td class="d-none d-lg-table-cell" style="font-size:.8rem;color:var(--muted)">${row.activities}</td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+      result.innerHTML = html;
+      printBtn.style.display = 'inline-flex';
+    })
+    .catch(() => {
+      result.innerHTML = '<div class="lms-alert lms-alert-danger">Request failed. Check your connection.</div>';
+    });
+}
+
+function printSOW() {
+  const content = document.getElementById('sowPrintArea');
+  if (!content) return;
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write('<html><head><title>Scheme of Work</title>');
+  win.document.write('<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">');
+  win.document.write('<style>body{font-family:Inter,sans-serif;padding:2rem}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e2e8f0;padding:.5rem .75rem;font-size:.85rem}thead{background:#f8fafc}</style>');
+  win.document.write('</head><body>');
+  win.document.write(content.outerHTML);
+  win.document.write('<script>window.onload=function(){window.print();window.close();}<\/script>');
+  win.document.write('</body></html>');
+  win.document.close();
+}
+
+function escSOW(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>

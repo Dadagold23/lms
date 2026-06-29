@@ -167,49 +167,129 @@ function generateLocalTutorReply(string $baseUrl, string $model, string $systemI
 
 function buildOfflineTutorReply(string $question, string $courseSummary, string $lessonExcerpt): string
 {
-    $question = trim($question);
-    $plainLesson = trim(preg_replace('/\s+/', ' ', strip_tags($lessonExcerpt)));
-    $plainSummary = trim(preg_replace('/\s+/', ' ', strip_tags($courseSummary)));
+    $questionLower = strtolower(trim($question));
+    
+    // Friendly introductory greeting
+    $reply = "👋 **Hello! I am your Grafix@Mirror AI Tutor.**\n\n";
+    $reply .= "I've analyzed your question and cross-referenced it with your current lesson material. Here is a guided breakdown to help you understand:\n\n";
 
-    $sourceText = $plainLesson !== '' ? $plainLesson : $plainSummary;
-    $sentences = preg_split('/(?<=[\.\!\?])\s+/', $sourceText) ?: [];
-    $keywords = array_values(array_filter(array_unique(preg_split('/[^a-z0-9]+/i', strtolower($question)) ?: []), static function ($word) {
-        return strlen($word) >= 4;
-    }));
+    // 1. Keyword-based tailored responses
+    $customResponse = '';
+    if (str_contains($questionLower, 'scratch') || str_contains($questionLower, 'sprite') || str_contains($questionLower, 'block-based')) {
+        $customResponse = "### 🐈 Understanding Block-Based Programming (Scratch)\n"
+            . "Scratch is a visual, block-based programming environment where you control **Sprites** (characters or objects) using scripts built by snapping blocks together.\n\n"
+            . "**Key Elements to Remember:**\n"
+            . "- **Stage**: Where your Sprites interact and the animation/game runs.\n"
+            . "- **Scripts Area**: The workspace where you drag and drop code blocks from the palette.\n"
+            . "- **Events**: Code blocks like `When Green Flag Clicked` that trigger your programs.\n"
+            . "- **Control Loops**: Blocks like `Repeat` or `Forever` that make actions run multiple times.\n\n"
+            . "**💡 Practical Exercise:**\n"
+            . "Open Scratch on your computer, add a new Sprite, and snap `When Green Flag Clicked` -> `Repeat 10` -> `Move 10 Steps` -> `Play Sound Meow`. Press the green flag to test!";
+    } elseif (str_contains($questionLower, 'python') || str_contains($questionLower, 'variable') || str_contains($questionLower, 'function') || str_contains($questionLower, 'code')) {
+        $customResponse = "### 🐍 Understanding Python Variables & Structure\n"
+            . "Python is an elegant, high-level programming language known for its readability.\n\n"
+            . "**Key Coding Rules:**\n"
+            . "1. **Variables**: Containers for storing data values. You define them simply as `name = \"David\"` or `age = 16`.\n"
+            . "2. **Indentation**: Python uses spaces to define blocks of code (like inside `if` statements or functions) instead of curly braces `{}`.\n"
+            . "3. **Functions**: Defined with the `def` keyword, allowing you to write reusable code blocks.\n\n"
+            . "**💻 Example Python Code:**\n"
+            . "```python\n"
+            . "def greet_student(name):\n"
+            . "    return \"Welcome back, \" + name + \"!\"\n\n"
+            . "print(greet_student(\"David\"))\n"
+            . "```";
+    } elseif (str_contains($questionLower, 'html') || str_contains($questionLower, 'css') || str_contains($questionLower, 'web design') || str_contains($questionLower, 'styling')) {
+        $customResponse = "### 🌐 Web Design: HTML and CSS Basics\n"
+            . "Websites are built using two core languages: HTML for structure and CSS for presentation.\n\n"
+            . "**How they work together:**\n"
+            . "- **HTML (Markup)**: Uses tags to describe content. E.g., `<h1>Heading</h1>` or `<p>Paragraph</p>`.\n"
+            . "- **CSS (Styling)**: Defines how HTML tags look (colors, layouts, sizes). E.g., `h1 { color: blue; }`.\n\n"
+            . "**💡 Pro-Tip:**\n"
+            . "Always keep your styles separate from your content! Using external stylesheet files (CSS) keeps your code clean and professional.";
+    } elseif (str_contains($questionLower, 'database') || str_contains($questionLower, 'sql') || str_contains($questionLower, 'join')) {
+        $customResponse = "### 🗄️ Understanding Database Systems & SQL Queries\n"
+            . "A database is an organized collection of tables containing columns (attributes) and rows (records).\n\n"
+            . "**Key SQL Query Concepts:**\n"
+            . "- **SELECT**: Used to query and fetch data. E.g. `SELECT name FROM students;`\n"
+            . "- **WHERE**: Filters records based on conditions. E.g. `WHERE score >= 75;`\n"
+            . "- **JOIN**: Merges rows from multiple tables (like students and enrollments) based on matching IDs.\n\n"
+            . "**🔍 Example Query:**\n"
+            . "```sql\n"
+            . "SELECT s.name, e.status \n"
+            . "FROM lms_students s\n"
+            . "JOIN lms_enrollments e ON s.id = e.student_id;\n"
+            . "```";
+    } elseif (str_contains($questionLower, 'algorithm') || str_contains($questionLower, 'flowchart')) {
+        $customResponse = "### 📐 Algorithms and Flowcharts\n"
+            . "Before coding, programmers map out solutions using logical algorithms and flowcharts.\n\n"
+            . "- **Algorithm**: A step-by-step set of written instructions to solve a problem.\n"
+            . "- **Flowchart**: A diagram representing the algorithm using standard shapes:\n"
+            . "  - *Oval*: Start and End terminal points.\n  - *Rectangle*: Process actions or operations.\n  - *Diamond*: Decision questions (Yes/No).\n  - *Parallelogram*: Input/Output read or write data.";
+    } elseif (str_contains($questionLower, 'computer') || str_contains($questionLower, 'input') || str_contains($questionLower, 'output') || str_contains($questionLower, 'hardware') || str_contains($questionLower, 'software') || str_contains($questionLower, 'cpu') || str_contains($questionLower, 'memory') || str_contains($questionLower, 'ram') || str_contains($questionLower, 'rom')) {
+        $customResponse = "### 🖥️ Understanding Computer Hardware & Software Systems\n"
+            . "A computer system is a combination of physical hardware components and logical software programs.\n\n"
+            . "**1. Key Hardware Components:**\n"
+            . "- **Input Devices**: Keyboard, Mouse, Scanner (to feed data).\n"
+            . "- **Output Devices**: Monitor, Printer, Speakers (to present data).\n"
+            . "- **CPU (Central Processing Unit)**: The brain of the computer that processes all instructions.\n"
+            . "- **RAM**: Fast, temporary memory (clears when powered off).\n"
+            . "- **ROM**: Permanent, read-only memory containing system startup instructions.\n\n"
+            . "**2. Key Software Types:**\n"
+            . "- **System Software**: Manages hardware (e.g. Windows, macOS).\n"
+            . "- **Application Software**: Programs that help you work (e.g. browsers, MS Word).";
+    }
 
-    $matches = [];
-    foreach ($sentences as $sentence) {
-        $score = 0;
-        $lower = strtolower($sentence);
-        foreach ($keywords as $keyword) {
-            if (str_contains($lower, $keyword)) {
-                $score++;
+    if ($customResponse !== '') {
+        $reply .= $customResponse;
+    } else {
+        // Fallback to extract sentences from context, formatted beautifully
+        $plainLesson = trim(preg_replace('/\s+/', ' ', strip_tags($lessonExcerpt)));
+        $plainSummary = trim(preg_replace('/\s+/', ' ', strip_tags($courseSummary)));
+        $sourceText = $plainLesson !== '' ? $plainLesson : $plainSummary;
+        
+        $sentences = preg_split('/(?<=[\.\!\?])\s+/', $sourceText) ?: [];
+        $keywords = array_values(array_filter(array_unique(preg_split('/[^a-z0-9]+/i', strtolower($question)) ?: []), static function ($word) {
+            return strlen($word) >= 4;
+        }));
+
+        $matches = [];
+        foreach ($sentences as $sentence) {
+            $score = 0;
+            $lower = strtolower($sentence);
+            foreach ($keywords as $keyword) {
+                if (str_contains($lower, $keyword)) {
+                    $score++;
+                }
+            }
+            if ($score > 0) {
+                $matches[] = ['score' => $score, 'sentence' => trim($sentence)];
             }
         }
-        if ($score > 0) {
-            $matches[] = ['score' => $score, 'sentence' => trim($sentence)];
+
+        usort($matches, static fn($a, $b) => $b['score'] <=> $a['score']);
+        $best = array_slice(array_column($matches, 'sentence'), 0, 3);
+
+        if ($best === [] && $plainLesson !== '') {
+            $best[] = mb_substr($plainLesson, 0, 420) . (mb_strlen($plainLesson) > 420 ? '...' : '');
+        } elseif ($best === [] && $plainSummary !== '') {
+            $best[] = $plainSummary;
         }
+
+        $body = $best !== [] ? implode(" ", $best) : '';
+        
+        $reply .= "### 📖 Insights from Your Current Lesson\n";
+        if ($body !== '') {
+            $reply .= $body . "\n\n";
+        } else {
+            $reply .= "I couldn't find a direct text match for your question in the current lesson, but I am ready to guide you on any topic related to this course!\n\n";
+        }
+        $reply .= "**💡 Tip:** Try asking a narrower question focusing on specific terms in the lesson title to get a more precise explanation.";
     }
 
-    usort($matches, static fn($a, $b) => $b['score'] <=> $a['score']);
-    $best = array_slice(array_column($matches, 'sentence'), 0, 3);
+    $reply .= "\n\n---\n";
+    $reply .= "✨ **Keep up the great work!** Let me know if you need more examples or a breakdown of any specific concept.";
 
-    if ($best === [] && $plainLesson !== '') {
-        $best[] = mb_substr($plainLesson, 0, 420) . (mb_strlen($plainLesson) > 420 ? '...' : '');
-    } elseif ($best === [] && $plainSummary !== '') {
-        $best[] = $plainSummary;
-    }
-
-    $body = $best !== [] ? implode("\n\n", $best) : 'The lesson content is available, but I could not find a close text match for that question.';
-
-    return "**Lesson-based tutor response**\n\n"
-        . "Here is a response grounded in your LMS lesson and course material.\n\n"
-        . "**What this lesson says**\n"
-        . $body
-        . "\n\n**How to use this**\n"
-        . "Review the highlighted part above, then ask a narrower follow-up question if you want a more exact explanation from this lesson."
-        . "\n\n**Your question**\n"
-        . $question;
+    return $reply;
 }
 
 /* ── AJAX: handle chat message ── */

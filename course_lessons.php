@@ -32,14 +32,28 @@ $isUnlocked = (bool)$access['is_unlocked'];
 if (!$isUnlocked) redirect(courseUrl($row));
 
 /* ── Lessons for THIS course only ── */
-$lessons = $pdo->prepare("
-    SELECT id, title, sort_order
-    FROM lms_lessons
-    WHERE course_id=? AND is_published=1
-    ORDER BY sort_order ASC, id ASC
-");
-$lessons->execute([$courseId]);
-$lessons = $lessons->fetchAll(PDO::FETCH_ASSOC);
+$st = $pdo->prepare("SELECT is_affiliate, affiliate_class_level FROM lms_students WHERE id = ? LIMIT 1");
+$st->execute([$studentId]);
+$student = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+$isAffiliate = !empty($student['is_affiliate']);
+$classLevel  = $student['affiliate_class_level'] ?? '';
+
+$isCustomCurriculum = $isAffiliate && in_array($classLevel, ['JSS1', 'JSS2', 'JSS3', 'SSS1', 'SSS2', 'SSS3'], true);
+
+if ($isCustomCurriculum) {
+    require_once __DIR__ . '/includes/curriculum_helpers.php';
+    $lessons = getAffiliateLessonsForCourse($pdo, $courseId, $classLevel) ?: [];
+    $customCourseTitle = str_replace(['JSS', 'SSS'], ['JSS ', 'SSS '], $classLevel) . " Computer Science";
+} else {
+    $lessonsStmt = $pdo->prepare("
+        SELECT id, title, sort_order
+        FROM lms_lessons
+        WHERE course_id=? AND is_published=1
+        ORDER BY sort_order ASC, id ASC
+    ");
+    $lessonsStmt->execute([$courseId]);
+    $lessons = $lessonsStmt->fetchAll(PDO::FETCH_ASSOC);
+}
 
 /* ── Lesson completion status ── */
 $completedIds = [];
@@ -74,7 +88,7 @@ function lessonUnlockTs(int $index, int $enrollTs): int {
 /* ── Flash message ── */
 $msg = $_GET['msg'] ?? '';
 $lockedMsg = urldecode((string)($_GET['msg'] ?? ''));
-$courseTitle = (string)$row['title'];
+$courseTitle = $isCustomCurriculum ? $customCourseTitle : (string)$row['title'];
 ?>
 <!doctype html>
 <html lang="en">

@@ -5,6 +5,17 @@ $footerYear = $footerYear ?? date('Y');
 $newsletterOk = $_SESSION['newsletter_ok'] ?? null;
 $newsletterError = $_SESSION['newsletter_error'] ?? null;
 unset($_SESSION['newsletter_ok'], $_SESSION['newsletter_error']);
+
+// Dynamically determine the root prefix for links when loaded from subdirectories of any depth
+$rootPrefix = '';
+$dir = dirname($_SERVER['SCRIPT_FILENAME'] ?? '');
+for ($i = 0; $i < 4; $i++) {
+    if (file_exists($dir . '/includes/public_nav.php')) {
+        break;
+    }
+    $rootPrefix .= '../';
+    $dir = dirname($dir);
+}
 ?>
 <footer class="public-footer">
   <div class="container">
@@ -18,21 +29,22 @@ unset($_SESSION['newsletter_ok'], $_SESSION['newsletter_error']);
       <div>
         <div class="public-footer__heading">Quick Access</div>
         <nav class="public-footer__links" aria-label="Footer quick access">
-          <a href="index.php">Home</a>
-          <a href="about_us.php">About Us</a>
-          <a href="register.php">Available Courses</a>
-          <a href="faqs.php">FAQs</a>
-          <a href="help.php">Help?</a>
-          <a href="contact_us.php">Contact Us</a>
+          <a href="<?= $rootPrefix ?>index.php">Home</a>
+          <a href="<?= $rootPrefix ?>about_us.php">About Us</a>
+          <a href="<?= $rootPrefix ?>register.php">Available Courses</a>
+          <a href="<?= $rootPrefix ?>unitary_academy/index.php">Affiliate</a>
+          <a href="<?= $rootPrefix ?>faqs.php">FAQs</a>
+          <a href="<?= $rootPrefix ?>help.php">Help?</a>
+          <a href="<?= $rootPrefix ?>contact_us.php">Contact Us</a>
         </nav>
       </div>
 
       <div>
         <div class="public-footer__heading">Portals</div>
         <nav class="public-footer__links" aria-label="Footer portal links">
-          <a href="login.php">Student Login</a>
-          <a href="instructor_login.php">Instructor Portal</a>
-          <a href="cookie_policy.php">Cookie Policy</a>
+          <a href="<?= $rootPrefix ?>login.php">Student Login</a>
+          <a href="<?= $rootPrefix ?>instructor_login.php">Instructor Portal</a>
+          <a href="<?= $rootPrefix ?>cookie_policy.php">Cookie Policy</a>
         </nav>
       </div>
 
@@ -44,7 +56,7 @@ unset($_SESSION['newsletter_ok'], $_SESSION['newsletter_error']);
         <?php elseif ($newsletterError): ?>
           <div class="public-footer__message public-footer__message--error"><?= e($newsletterError) ?></div>
         <?php endif; ?>
-        <form class="public-footer__form" method="post" action="newsletter_subscribe.php">
+        <form class="public-footer__form" method="post" action="<?= $rootPrefix ?>newsletter_subscribe.php">
           <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
           <label class="visually-hidden" for="newsletterEmail">Email address</label>
           <input id="newsletterEmail" type="email" name="email" placeholder="Email address" required>
@@ -59,3 +71,4 @@ unset($_SESSION['newsletter_ok'], $_SESSION['newsletter_error']);
     </div>
   </div>
 </footer>
+

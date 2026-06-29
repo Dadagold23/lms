@@ -18,13 +18,19 @@ function redirect(string $url): void
     if ($url === '') {
         $url = 'index.php';
     }
-    // If the URL is already absolute or root-relative, redirect directly
-    if (preg_match('~^(https?:)?//~i', $url) || strpos($url, '/') === 0) {
-        header("Location: {$url}");
-    } else {
+    
+    // Resolve URL target
+    $target = $url;
+    if (!preg_match('~^(https?:)?//~i', $url) && strpos($url, '/') !== 0) {
         $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
         $base = rtrim($base, '/');
-        header("Location: {$base}/{$url}");
+        $target = "{$base}/{$url}";
+    }
+
+    if (PHP_SAPI === 'cli') {
+        echo "REDIRECT: " . $target . "\n";
+    } else {
+        header("Location: {$target}");
     }
     exit;
 }

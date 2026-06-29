@@ -85,6 +85,21 @@ $kycNumber   = clean($_POST['kyc_number'] ?? '');
 
 $password    = (string)($_POST['password'] ?? '');
 $confirmPwd  = (string)($_POST['confirm_password'] ?? '');
+$refToken    = clean($_POST['ref_token'] ?? '');
+$isAffiliate = (int)($_POST['is_affiliate'] ?? 0) === 1;
+$affiliateCourseId = (int)($_POST['affiliate_course_id'] ?? 0);
+$computedClassLevel = clean($_POST['computed_class_level'] ?? '');
+
+$referral = null;
+if ($isAffiliate && $refToken !== '') {
+    try {
+        $stmtRefSel = $pdo->prepare("SELECT * FROM lms_affiliate_referrals WHERE referral_token = ? AND status = 'pending_enrollment' LIMIT 1");
+        $stmtRefSel->execute([$refToken]);
+        $referral = $stmtRefSel->fetch(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        error_log("Referral select failed: " . $e->getMessage());
+    }
+}
 
 /* ======================
    VALIDATE INPUT
@@ -132,7 +147,63 @@ $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
 /* ======================
    VALIDATE COURSE (DB)
+   For affiliate: also validate affiliate course if supplied
 ====================== */
+$classRange = '';
+$classLevel = '';
+if ($isAffiliate) {
+    try {
+        $dobDate = new DateTime($dob);
+        $today   = new DateTime();
+        $age     = (int)$today->diff($dobDate)->y;
+
+        if ($age <= 11) {
+            $classRange = 'JSS';
+            $classLevel = match(true) {
+                $age <= 8  => 'JSS1',
+                $age === 9 => 'JSS2',
+                default    => 'JSS3',
+            };
+        } elseif ($age >= 12 && $age <= 17) {
+            $classRange = 'SSS';
+            $classLevel = match(true) {
+                $age <= 13 => 'SSS1',
+                $age <= 15 => 'SSS2',
+                default    => 'SSS3',
+            };
+        } else {
+            $classRange = 'Higher';
+            $classLevel = 'Higher';
+        }
+
+        if ($computedClassLevel !== '') {
+            $safeLevel = preg_replace('/[^A-Za-z0-9]/', '', $computedClassLevel);
+            $allowed = ['JSS1','JSS2','JSS3','SSS1','SSS2','SSS3','Higher'];
+            if (in_array($safeLevel, $allowed, true)) {
+                $classLevel = $safeLevel;
+                $classRange = str_starts_with($safeLevel, 'JSS') ? 'JSS' : (str_starts_with($safeLevel, 'SSS') ? 'SSS' : 'Higher');
+            }
+        }
+    } catch (Throwable $e) {
+        // Fallback
+    }
+}
+
+$affiliateCourseTitle = '';
+$affiliateCoursePrice = 0.0;
+
+if ($isAffiliate && $affiliateCourseId > 0) {
+    // For Higher-track students, validate the normal lms_courses
+    // For JSS/SSS track, validate the affiliate course
+    $acStmt = $pdo->prepare("SELECT title, price FROM lms_affiliate_courses WHERE id = ? AND is_active = 1 LIMIT 1");
+    $acStmt->execute([$affiliateCourseId]);
+    $acRow = $acStmt->fetch(PDO::FETCH_ASSOC);
+    if ($acRow) {
+        $affiliateCourseTitle = (string)$acRow['title'];
+        $affiliateCoursePrice = (float)$acRow['price'];
+    }
+}
+
 $courseStmt = $pdo->prepare("
     SELECT id, title, price
     FROM lms_courses
@@ -142,13 +213,17 @@ $courseStmt = $pdo->prepare("
 $courseStmt->execute([$courseId]);
 $courseRow = $courseStmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$courseRow) {
+if (!$courseRow && !$isAffiliate) {
     $_SESSION['register_error'] = 'Invalid course selected.';
     redirect('register.php');
 }
 
-$courseTitle = (string)$courseRow['title'];
-$coursePrice = (float)$courseRow['price'];
+$courseTitle = $courseRow ? (string)$courseRow['title'] : ($affiliateCourseTitle ?: 'Affiliate Course');
+$coursePrice = $courseRow ? (float)$courseRow['price'] : $affiliateCoursePrice;
+
+if ($isAffiliate && ($classRange === 'JSS' || $classRange === 'SSS')) {
+    $coursePrice = min($coursePrice, 5000.0);
+}
 
 /* ======================
    DUPLICATE EMAIL
@@ -163,12 +238,31 @@ if ($check->fetch()) {
 /* ======================
    FILE UPLOADS
 ====================== */
-$passportPhoto  = uploadImage('passport', $uploadDir);
-$signaturePhoto = uploadImage('signature', $uploadDir);
+$passportPhoto  = null;
+$signaturePhoto = null;
+$autologinToken = null;
 
-if (!$passportPhoto || !$signaturePhoto) {
-    $_SESSION['register_error'] = 'Passport and signature are required (JPG/PNG).';
-    redirect('register.php');
+if ($isAffiliate) {
+    if ($referral) {
+        $passportPhoto  = $referral['passport'] ?? null;
+        $signaturePhoto = $referral['signature'] ?? null;
+        $kycType        = $referral['kyc_type'] ?? '';
+        $kycNumber      = $referral['kyc_number'] ?? '';
+        $autologinToken = $referral['autologin_token'] ?? null;
+    }
+
+    if (!$passportPhoto || !$signaturePhoto) {
+        $_SESSION['register_error'] = 'Invalid affiliate referral or missing KYC images.';
+        redirect('register.php');
+    }
+} else {
+    $passportPhoto  = uploadImage('passport', $uploadDir);
+    $signaturePhoto = uploadImage('signature', $uploadDir);
+
+    if (!$passportPhoto || !$signaturePhoto) {
+        $_SESSION['register_error'] = 'Passport and signature are required (JPG/PNG).';
+        redirect('register.php');
+    }
 }
 
 /* ======================
@@ -236,6 +330,7 @@ $allFields = [
     'course_price'    => $coursePrice,      // legacy column
     'payment_option'  => $paymentOpt,       // legacy column
     'password'        => $hashedPassword,
+    'autologin_token' => $autologinToken,
     'created_at'      => null,
 ];
 
@@ -282,6 +377,58 @@ try {
 $userId = (int)$pdo->lastInsertId();
 
 /* ======================
+   AFFILIATE: DB UPDATE
+====================== */
+if ($isAffiliate && $userId > 0) {
+    // Update student record with affiliate info
+    try {
+        $partnerId = null;
+        if ($refToken !== '') {
+            $stmtP = $pdo->prepare("SELECT partner_id FROM lms_affiliate_referrals WHERE referral_token = ? LIMIT 1");
+            $stmtP->execute([$refToken]);
+            $partnerIdVal = $stmtP->fetchColumn();
+            if ($partnerIdVal !== false) {
+                $partnerId = (int)$partnerIdVal;
+            }
+        }
+
+        $pdo->prepare("
+            UPDATE lms_students
+            SET is_affiliate = 1,
+                affiliate_class_range = ?,
+                affiliate_class_level = ?,
+                affiliate_course_id   = ?,
+                affiliate_partner_id  = ?
+            WHERE id = ?
+        ")->execute([$classRange, $classLevel, $affiliateCourseId ?: null, $partnerId, $userId]);
+    } catch (Throwable $e) {
+        error_log("Affiliate student update failed: " . $e->getMessage());
+    }
+}
+
+/* Update referral status + class info */
+if ($refToken !== '') {
+    try {
+        $stmtRef = $pdo->prepare("
+            UPDATE lms_affiliate_referrals
+            SET status = 'enrolled',
+                class_range = ?,
+                class_level = ?,
+                affiliate_course_id = ?
+            WHERE referral_token = ? AND status = 'pending_enrollment'
+        ");
+        $stmtRef->execute([
+            isset($classRange) ? $classRange : null,
+            isset($classLevel) ? $classLevel : null,
+            $affiliateCourseId ?: null,
+            $refToken,
+        ]);
+    } catch (Throwable $e) {
+        error_log("Referral status update failed: " . $e->getMessage());
+    }
+}
+
+/* ======================
    OPTIONAL: CREATE ENROLLMENT IMMEDIATELY
    If your lms_enrollments table exists
 ====================== */
@@ -304,22 +451,41 @@ try {
         $assignedIdVal = $assignedInstructorId ? (int)$assignedInstructorId : null;
         $needsAssignVal = $assignedInstructorId ? 0 : 1;
 
+        $isUnlockedAffiliate = false;
+        $initPaidAmount = 0.0;
+        $initStatus = 'active';
+
         $enHasPT = in_array('payment_type', $enCols, true);
         if ($enHasPT) {
             $en = $pdo->prepare("
                 INSERT INTO lms_enrollments (student_id, course_id, paid_amount, payment_type, status, assigned_instructor_id, needs_instructor_assignment, created_at)
-                VALUES (?,?,0,?,'active',?,?,NOW())
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
             ");
-            $en->execute([$userId, $courseId, $paymentOpt, $assignedIdVal, $needsAssignVal]);
+            $en->execute([$userId, $courseId, $initPaidAmount, $isUnlockedAffiliate ? 'full' : $paymentOpt, $initStatus, $assignedIdVal, $needsAssignVal]);
         } else {
             $en = $pdo->prepare("
                 INSERT INTO lms_enrollments (student_id, course_id, paid_amount, status, assigned_instructor_id, needs_instructor_assignment, created_at)
-                VALUES (?,?,0,'active',?,?,NOW())
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
             ");
-            $en->execute([$userId, $courseId, $assignedIdVal, $needsAssignVal]);
+            $en->execute([$userId, $courseId, $initPaidAmount, $initStatus, $assignedIdVal, $needsAssignVal]);
         }
 
         $enrollmentId = (int)$pdo->lastInsertId();
+
+        // If affiliate JSS/SSS, insert a successful payment record into lms_payments
+        if ($isUnlockedAffiliate && $enrollmentId > 0) {
+            try {
+                $payStmt = $pdo->prepare("
+                    INSERT INTO lms_payments (student_id, enrollment_id, amount, channel, reference, status, created_at)
+                    VALUES (?, ?, ?, 'campaign', ?, 'success', NOW())
+                ");
+                $campaignRef = 'CAMP_' . bin2hex(random_bytes(6));
+                $payStmt->execute([$userId, $enrollmentId, $initPaidAmount, $campaignRef]);
+            } catch (Throwable $e) {
+                error_log("Failed to insert campaign payment record: " . $e->getMessage());
+            }
+        }
+
         if ($assignedIdVal && $enrollmentId > 0) {
             require_once __DIR__ . '/includes/student_notifications.php';
             notifyInstructorAssigned($pdo, $enrollmentId, $assignedIdVal);

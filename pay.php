@@ -58,6 +58,17 @@ if ($coursePrice <= 0) {
     exit('Course price not set.');
 }
 
+// Fetch student's affiliate info to apply price cap
+$st = $pdo->prepare("SELECT is_affiliate, affiliate_class_range FROM lms_students WHERE id = ? LIMIT 1");
+$st->execute([$studentId]);
+$student = $st->fetch() ?: [];
+$isAffiliate = !empty($student['is_affiliate']);
+$classRange  = $student['affiliate_class_range'] ?? '';
+
+if ($isAffiliate && ($classRange === 'JSS' || $classRange === 'SSS')) {
+    $coursePrice = min($coursePrice, 5000.0);
+}
+
 $balance = max(0, $coursePrice - $paidAmount);
 
 if ($balance <= 0) {
@@ -122,6 +133,33 @@ if (isPost()) {
 
         $_SESSION['manual_payment_flash'] = "Manual payment request submitted. Give admin this reference: {$manualReference}";
         redirect('pay.php?enrollment_id=' . $enrollmentId);
+    } elseif ($action === 'campaign_portal_payment') {
+        if ($isAffiliate) {
+            try {
+                require_once __DIR__ . '/includes/affiliate_helpers.php';
+                
+                // Retrieve the partner/campaign details for this referred student
+                $stmtRef = $pdo->prepare("SELECT partner_id, campaign_id FROM lms_affiliate_referrals WHERE pupil_email = ? LIMIT 1");
+                $stmtRef->execute([$email]);
+                $referral = $stmtRef->fetch(PDO::FETCH_ASSOC);
+                
+                $partnerId = $referral ? (int)$referral['partner_id'] : 0;
+                $campaignId = ($referral && $referral['campaign_id'] !== null) ? (int)$referral['campaign_id'] : null;
+                
+                if ($partnerId > 0) {
+                    processCampaignPayment($pdo, $studentId, $enrollmentId, $due, $partnerId, $campaignId);
+                    $_SESSION['pay_success'] = "Course unlocked successfully via Campaign/Partner Portal Payment Access.";
+                    redirect('payments.php');
+                } else {
+                    $_SESSION['manual_payment_flash'] = "No valid affiliate partner referral found for this student.";
+                    redirect('pay.php?enrollment_id=' . $enrollmentId);
+                }
+            } catch (Throwable $e) {
+                error_log("Failed campaign portal payment: " . $e->getMessage());
+                $_SESSION['manual_payment_flash'] = "Failed to process campaign/partner payment: " . $e->getMessage();
+                redirect('pay.php?enrollment_id=' . $enrollmentId);
+            }
+        }
     }
 }
 
@@ -218,6 +256,16 @@ require_once __DIR__ . '/includes/seo.php';
     <button id="payBtn" class="btn btn-success btn-lg">
       Pay ₦<?= number_format($due, 2) ?> via Paystack
     </button>
+    <?php if ($isAffiliate): ?>
+    <form method="post">
+      <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
+      <input type="hidden" name="enrollment_id" value="<?= (int)$enrollmentId ?>">
+      <input type="hidden" name="action" value="campaign_portal_payment">
+      <button class="btn btn-info w-100 fw-bold text-dark" type="submit">
+        <i class="fa fa-key me-1"></i> Access via Campaign / Partner Portal
+      </button>
+    </form>
+    <?php endif; ?>
     <form method="post">
       <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
       <input type="hidden" name="enrollment_id" value="<?= (int)$enrollmentId ?>">

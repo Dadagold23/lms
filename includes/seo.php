@@ -59,13 +59,28 @@ $_hasCookieConsent = isset($_COOKIE['lms_cookie_consent']);
 <base href="<?= e(appBaseUrl()) ?>">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// Override native window.alert to use SweetAlert2 globally
+window.alert = function(message) {
+    Swal.fire({
+        text: message,
+        confirmButtonColor: '#4f46e5'
+    });
+};
+
 window.addEventListener('DOMContentLoaded', () => {
     const alertSelectors = '.alert-success, .alert-danger, .alert-info, .alert-warning, .lms-alert-success, .lms-alert-danger, .lms-alert-info, .lms-alert-warning';
     const alerts = document.querySelectorAll(alertSelectors);
     alerts.forEach(alert => {
-        if (alert.closest('.col-lg-4') || alert.classList.contains('mb-3') || alert.closest('.lms-alert-inline')) {
+        // Exclude static informational widgets (like the tiered commission sidebar)
+        if (alert.classList.contains('alert-info') && !alert.classList.contains('alert-dismissible') && !alert.classList.contains('show-sweetalert')) {
             return;
         }
+        
+        // Exclude inline validation blocks or special forms
+        if (alert.closest('.lms-alert-inline')) {
+            return;
+        }
+
         const text = alert.textContent.replace(/×/g, '').trim();
         if (text) {
             let icon = 'info';
