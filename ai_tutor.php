@@ -485,10 +485,10 @@ require_once __DIR__ . '/includes/seo.php';
       </form>
       <?php endif; ?>
       <?php if (!empty($chatHistory)): ?>
-        <form method="post" class="d-inline" onsubmit="return confirm('Clear chat history?')">
+        <form method="post" class="d-inline" id="clearChatForm">
           <input type="hidden" name="_csrf" value="<?= e(csrfToken()) ?>">
           <input type="hidden" name="clear_chat" value="1">
-          <button type="submit" class="btn-ghost" style="font-size:.8rem">
+          <button type="button" onclick="confirmClearChat()" class="btn-ghost" style="font-size:.8rem">
             <i class="fa fa-trash me-1"></i>Clear
           </button>
         </form>
@@ -651,6 +651,23 @@ document.getElementById('msgInput').addEventListener('input', function() {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 120) + 'px';
 });
+
+function confirmClearChat() {
+  Swal.fire({
+    title: 'Clear Chat History?',
+    text: 'Are you sure you want to clear your chat history? This cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#4f46e5',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Yes, clear it!',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      document.getElementById('clearChatForm').submit();
+    }
+  });
+}
 
 // Scroll to bottom on load
 window.addEventListener('load', () => {
