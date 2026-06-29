@@ -176,8 +176,20 @@ document.getElementById('payBtn').addEventListener('click', function () {
         + "&partner_type=" + encodeURIComponent(<?= json_encode($partnerType) ?>);
     },
     onClose: function () {
-      if (!confirm('Payment cancelled. Return to dashboard?')) return;
-      window.location.href = "unitary_academy/<?= e($partnerType) ?>/index.php";
+      Swal.fire({
+        title: 'Payment Cancelled',
+        text: 'Would you like to return to your partner dashboard?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, return',
+        cancelButtonText: 'No, stay here'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = "unitary_academy/<?= e($partnerType) ?>/index.php";
+        }
+      });
     }
   });
   handler.openIframe();

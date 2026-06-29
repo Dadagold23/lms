@@ -758,7 +758,7 @@ require_once dirname(dirname(__DIR__)) . '/includes/seo.php';
                             <i class="fa fa-id-card me-1"></i> ID Card
                           </button>
                           <?php if ($ref['status'] === 'enrolled' && ($ref['enrollment_status'] ?? '') === 'active'): ?>
-                            <form method="post" class="d-inline ms-1" onsubmit="return confirm('Unlock course for this student and deduct commission?');">
+                             <form method="post" class="d-inline ms-1" onsubmit="confirmPartnerPayment(event, this);">
                               <input type="hidden" name="_csrf" value="<?= e(csrfToken() ?? '') ?>">
                               <input type="hidden" name="action" value="partner_make_payment">
                               <input type="hidden" name="referral_id" value="<?= (int)$ref['id'] ?>">
@@ -1232,6 +1232,24 @@ document.addEventListener('DOMContentLoaded', function() {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 });
+
+function confirmPartnerPayment(event, form) {
+  event.preventDefault();
+  Swal.fire({
+    title: 'Unlock Course?',
+    text: 'Unlock course for this student and deduct commission?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#0d9488',
+    cancelButtonColor: '#6c757d',
+    confirmButtonText: 'Yes, unlock it!',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      form.submit();
+    }
+  });
+}
 </script>
 </body>
 </html>

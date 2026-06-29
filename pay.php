@@ -293,8 +293,20 @@ document.getElementById('payBtn').addEventListener('click', function () {
       window.location.href = <?= json_encode($paystackCallback) ?> + "?reference=" + encodeURIComponent(response.reference);
     },
     onClose: function () {
-      if (!confirm('Payment cancelled. Go back to dashboard?')) return;
-      window.location.href = "dashboard.php";
+      Swal.fire({
+        title: 'Payment Cancelled',
+        text: 'Would you like to return to your student dashboard?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, return',
+        cancelButtonText: 'No, stay here'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = "dashboard.php";
+        }
+      });
     }
   });
   handler.openIframe();
