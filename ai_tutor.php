@@ -18,29 +18,50 @@ $courseId = (int)($_GET['course_id'] ?? ($_POST['course_id'] ?? 0));
  $lessonId = (int)($_GET['lesson_id'] ?? ($_POST['lesson_id'] ?? 0));
 if ($courseId <= 0 && !empty($enrolledCourses)) $courseId = (int)$enrolledCourses[0]['id'];
 
+// Check for custom curriculum
+$st = $pdo->prepare("SELECT is_affiliate, affiliate_class_level FROM lms_students WHERE id = ? LIMIT 1");
+$st->execute([$studentId]);
+$student = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+$isAffiliate = !empty($student['is_affiliate']);
+$classLevel  = $student['affiliate_class_level'] ?? '';
+$isCustomCurriculum = $isAffiliate && in_array($classLevel, ['JSS1', 'JSS2', 'JSS3', 'SSS1', 'SSS2', 'SSS3'], true);
+
 $selectedCourse = null;
 foreach ($enrolledCourses as $ec) {
     if ((int)$ec['id'] === $courseId) { $selectedCourse = $ec; break; }
 }
 
 $selectedLesson = null;
-if ($lessonId > 0) {
-    $lessonStmt = $pdo->prepare("
-        SELECT id, course_id, title, content
-        FROM lms_lessons
-        WHERE id = ? AND is_published = 1
-        LIMIT 1
-    ");
-    $lessonStmt->execute([$lessonId]);
-    $selectedLesson = $lessonStmt->fetch(PDO::FETCH_ASSOC) ?: null;
-
-    if ($selectedLesson && $courseId <= 0) {
-        $courseId = (int)$selectedLesson['course_id'];
+if ($isCustomCurriculum) {
+    require_once __DIR__ . '/includes/curriculum_helpers.php';
+    $customLessons = getAffiliateLessonsForCourse($pdo, $courseId, $classLevel) ?: [];
+    if ($lessonId > 0) {
+        foreach ($customLessons as $cl) {
+            if ((int)$cl['id'] === $lessonId) {
+                $selectedLesson = $cl;
+                break;
+            }
+        }
     }
+} else {
+    if ($lessonId > 0) {
+        $lessonStmt = $pdo->prepare("
+            SELECT id, course_id, title, content
+            FROM lms_lessons
+            WHERE id = ? AND is_published = 1
+            LIMIT 1
+        ");
+        $lessonStmt->execute([$lessonId]);
+        $selectedLesson = $lessonStmt->fetch(PDO::FETCH_ASSOC) ?: null;
 
-    if ($selectedLesson && $courseId > 0 && (int)$selectedLesson['course_id'] !== $courseId) {
-        $selectedLesson = null;
-        $lessonId = 0;
+        if ($selectedLesson && $courseId <= 0) {
+            $courseId = (int)$selectedLesson['course_id'];
+        }
+
+        if ($selectedLesson && $courseId > 0 && (int)$selectedLesson['course_id'] !== $courseId) {
+            $selectedLesson = null;
+            $lessonId = 0;
+        }
     }
 }
 
@@ -54,7 +75,7 @@ function envValue(string $key, string $default = ''): string
     return (string)$value;
 }
 
-function fetchCourseContext(PDO $pdo, int $courseId, int $lessonId = 0): array
+function fetchCourseContext(PDO $pdo, int $courseId, int $lessonId = 0, bool $isCustomCurriculum = false, string $classLevel = ''): array
 {
     if ($courseId <= 0) {
         return ['summary' => '', 'lesson_excerpt' => ''];
@@ -64,32 +85,53 @@ function fetchCourseContext(PDO $pdo, int $courseId, int $lessonId = 0): array
     $courseStmt->execute([$courseId]);
     $course = $courseStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-    if ($lessonId > 0) {
-        $lessonStmt = $pdo->prepare("
-            SELECT title, content
-            FROM lms_lessons
-            WHERE course_id = ? AND id = ? AND is_published = 1
-            LIMIT 1
-        ");
-        $lessonStmt->execute([$courseId, $lessonId]);
+    if ($isCustomCurriculum) {
+        require_once __DIR__ . '/includes/curriculum_helpers.php';
+        $customLessons = getAffiliateLessonsForCourse($pdo, $courseId, $classLevel) ?: [];
+        
+        $lessons = [];
+        if ($lessonId > 0) {
+            foreach ($customLessons as $cl) {
+                if ((int)$cl['id'] === $lessonId) {
+                    $lessons[] = $cl;
+                    break;
+                }
+            }
+        } else {
+            $lessons = array_slice($customLessons, 0, 5);
+        }
     } else {
-        $lessonStmt = $pdo->prepare("
-            SELECT title, content
-            FROM lms_lessons
-            WHERE course_id = ? AND is_published = 1
-            ORDER BY sort_order ASC, id ASC
-            LIMIT 5
-        ");
-        $lessonStmt->execute([$courseId]);
+        if ($lessonId > 0) {
+            $lessonStmt = $pdo->prepare("
+                SELECT title, content
+                FROM lms_lessons
+                WHERE course_id = ? AND id = ? AND is_published = 1
+                LIMIT 1
+            ");
+            $lessonStmt->execute([$courseId, $lessonId]);
+        } else {
+            $lessonStmt = $pdo->prepare("
+                SELECT title, content
+                FROM lms_lessons
+                WHERE course_id = ? AND is_published = 1
+                ORDER BY sort_order ASC, id ASC
+                LIMIT 5
+            ");
+            $lessonStmt->execute([$courseId]);
+        }
+        $lessons = $lessonStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
-    $lessons = $lessonStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
     $summary = '';
     if ($course) {
         $summary = 'Student is enrolled in "' . ($course['title'] ?? 'this course') . '". ';
-        if (!empty($course['short_description'])) $summary .= trim((string)$course['short_description']) . ' ';
-        if (!empty($course['description'])) $summary .= mb_substr(trim((string)$course['description']), 0, 280) . '. ';
-        if (!empty($course['level'])) $summary .= 'Level: ' . $course['level'] . '. ';
+        if ($isCustomCurriculum) {
+            $summary .= 'This is a custom ' . $classLevel . ' Computer Science curriculum. ';
+        } else {
+            if (!empty($course['short_description'])) $summary .= trim((string)$course['short_description']) . ' ';
+            if (!empty($course['description'])) $summary .= mb_substr(trim((string)$course['description']), 0, 280) . '. ';
+            if (!empty($course['level'])) $summary .= 'Level: ' . $course['level'] . '. ';
+        }
     }
 
     if ($lessons) {
@@ -293,7 +335,7 @@ function buildOfflineTutorReply(string $question, string $courseSummary, string 
 }
 
 /* ── AJAX: handle chat message ── */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['message'])) {
     header('Content-Type: application/json; charset=utf-8');
     verifyCsrf($_POST['_csrf'] ?? '');
     $userMsg = trim((string)($_POST['message'] ?? ''));
@@ -304,7 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['message'])) {
         ->execute([$studentId, $cid ?: null, 'user', $userMsg]);
 
     $activeLessonId = (int)($_POST['lesson_id'] ?? $lessonId);
-    $courseContext = fetchCourseContext($pdo, $cid, $activeLessonId);
+    $courseContext = fetchCourseContext($pdo, $cid, $activeLessonId, $isCustomCurriculum, $classLevel);
     $ctx = $courseContext['summary'];
     $lessonExcerpt = $courseContext['lesson_excerpt'];
 
