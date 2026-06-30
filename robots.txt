@@ -2,14 +2,19 @@ User-agent: *
 Allow: /
 Allow: /index.php
 Allow: /register.php
+Allow: /register
 Allow: /courses.php
+Allow: /courses
 Allow: /course.php
+Allow: /course/
 Allow: /certificate_verify.php
 Allow: /instructor_register.php
+Allow: /instructor_register
 Allow: /assets/
 
 # Block private/auth pages
 Disallow: /dashboard.php
+Disallow: /dashboard
 Disallow: /admin_
 Disallow: /instructor_dashboard.php
 Disallow: /instructor_lessons.php
@@ -19,23 +24,40 @@ Disallow: /instructor_grade_assignment.php
 Disallow: /instructor_upload_
 Disallow: /instructor_live_sessions.php
 Disallow: /login.php
+Disallow: /login
 Disallow: /login_handler.php
 Disallow: /logout.php
+Disallow: /logout
 Disallow: /pay.php
+Disallow: /pay
 Disallow: /pay_verify.php
+Disallow: /pay_verify
 Disallow: /paystack_webhook.php
+Disallow: /paystack_webhook
 Disallow: /profile.php
+Disallow: /profile
 Disallow: /payments.php
+Disallow: /payments
 Disallow: /certificate.php
+Disallow: /certificate
 Disallow: /certificate_download.php
+Disallow: /certificate_download
 Disallow: /lesson.php
+Disallow: /lesson
 Disallow: /videos.php
+Disallow: /videos
 Disallow: /assignments.php
+Disallow: /assignments
 Disallow: /assignment_submit.php
+Disallow: /assignment_submit
 Disallow: /exams.php
+Disallow: /exams
 Disallow: /take_exam.php
+Disallow: /take_exam
 Disallow: /ai_tutor.php
+Disallow: /ai_tutor
 Disallow: /live_session.php
+Disallow: /live_session
 Disallow: /ajax_
 Disallow: /config/
 Disallow: /database/
@@ -45,3 +67,4 @@ Disallow: /uploads/
 Disallow: /vendor/
 
 Sitemap: https://lms.mirrorageconcepts.com/sitemap.xml
+

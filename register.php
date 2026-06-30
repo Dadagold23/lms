@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
-if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/includes/helpers.php';
+startSecureSession();
 require_once __DIR__ . '/config/db.php';
 
 if (isset($_SESSION['user'])) redirect('dashboard.php');
@@ -388,6 +388,27 @@ function togglePwd(id, btn) {
   const show = f.type === 'password';
   f.type = show ? 'text' : 'password';
   btn.innerHTML = show ? '<i class="fa fa-eye-slash"></i>' : '<i class="fa fa-eye"></i>';
+}/* Course price and select controls */
+const courseSelect = document.getElementById('courseSelect');
+const coursePrice = document.getElementById('coursePrice');
+
+function updateCoursePrice() {
+  if (!courseSelect) return;
+  let p = courseSelect.options[courseSelect.selectedIndex]?.dataset?.price || '';
+  
+  if (isAffiliateReg) {
+    const clField = document.getElementById('hClassLevel');
+    const level = clField ? clField.value : '';
+    if (level.startsWith('JSS') || level.startsWith('SSS')) {
+      if (p !== '') {
+        p = Math.min(Number(p), 5000.0);
+      }
+    }
+  }
+
+  coursePrice.value = p
+    ? '₦' + Number(p).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
+    : '';
 }
 
 /* ── Affiliate Age Routing ── */
@@ -508,29 +529,6 @@ if (dobInput) {
   if (dobInput.value) computeAgeRange();
 }
 
-/* Course price */
-const courseSelect = document.getElementById('courseSelect');
-const coursePrice = document.getElementById('coursePrice');
-
-function updateCoursePrice() {
-  if (!courseSelect) return;
-  let p = courseSelect.options[courseSelect.selectedIndex]?.dataset?.price || '';
-  
-  if (isAffiliateReg) {
-    const clField = document.getElementById('hClassLevel');
-    const level = clField ? clField.value : '';
-    if (level.startsWith('JSS') || level.startsWith('SSS')) {
-      if (p !== '') {
-        p = Math.min(Number(p), 5000.0);
-      }
-    }
-  }
-
-  coursePrice.value = p
-    ? '\u20A6' + Number(p).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})
-    : '';
-}
-
 if (courseSelect) { courseSelect.addEventListener('change', updateCoursePrice); updateCoursePrice(); }
 
 /* Password strength */
@@ -592,9 +590,14 @@ stateSelect.addEventListener('change', () => {
   if (!v) { resetSelect(lgaSelect,'Select LGA'); return; }
   loadLgas(v);
 });
-document.addEventListener('DOMContentLoaded', () => {
+function initGeo() {
   if (residenceSelect.value) loadStates(residenceSelect.value);
-});
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGeo);
+} else {
+  initGeo();
+}
 </script>
 </body>
 </html>

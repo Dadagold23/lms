@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
-session_start();
 require_once __DIR__ . '/includes/helpers.php';
+startSecureSession();
 require_once __DIR__ . '/config/db.php';
 $user     = $_SESSION['user'] ?? null;
 $siteName = 'Mirror Age Concepts';

@@ -919,7 +919,7 @@ function showReferralIdCard(data) {
   }
 
   // Generate registration link
-  const regLink = `${window.location.protocol}//${window.location.host}/lms/register.php?ref_token=${data.referral_token}`;
+  const regLink = <?= json_encode(appAbsoluteUrl('register.php')) ?> + `?ref_token=${data.referral_token}`;
 
   // Populate ID card modal
   document.getElementById('card_initials').textContent = initials || 'ST';
@@ -953,7 +953,7 @@ function showReferralIdCard(data) {
   const cardBarcode = document.getElementById('card_barcode');
   const cardBarcodeText = document.getElementById('card_barcode_text');
   if (data.autologin_token) {
-    const autologinUrl = `${window.location.protocol}//${window.location.host}/lms/autologin.php?token=${data.autologin_token}`;
+    const autologinUrl = <?= json_encode(appAbsoluteUrl('autologin.php')) ?> + `?token=${data.autologin_token}`;
     cardBarcode.src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&color=0f172a&data=${encodeURIComponent(autologinUrl)}`;
     cardBarcodeText.textContent = `*SYS-LOGIN-${data.autologin_token.substring(0, 12).toUpperCase()}*`;
   }
@@ -1112,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           
           // Generate registration link
-          const regLink = `${window.location.protocol}//${window.location.host}/lms/register.php?ref_token=${data.referral.referral_token}`;
+          const regLink = <?= json_encode(appAbsoluteUrl('register.php')) ?> + `?ref_token=${data.referral.referral_token}`;
           
           // Populate ID card modal
           document.getElementById('card_initials').textContent = initials || 'ST';
@@ -1146,7 +1146,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const cardBarcode = document.getElementById('card_barcode');
           const cardBarcodeText = document.getElementById('card_barcode_text');
           if (data.referral.autologin_token) {
-            const autologinUrl = `${window.location.protocol}//${window.location.host}/lms/autologin.php?token=${data.referral.autologin_token}`;
+            const autologinUrl = <?= json_encode(appAbsoluteUrl('autologin.php')) ?> + `?token=${data.referral.autologin_token}`;
             cardBarcode.src = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(autologinUrl)}&scale=2&rotate=N&includetext=0`;
             cardBarcodeText.textContent = `*SYS-LOGIN-${data.referral.autologin_token.substring(0, 12).toUpperCase()}*`;
           }

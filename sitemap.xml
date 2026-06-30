@@ -6,17 +6,17 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://lms.mirrorageconcepts.com/register.php</loc>
+    <loc>https://lms.mirrorageconcepts.com/register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://lms.mirrorageconcepts.com/courses.php</loc>
+    <loc>https://lms.mirrorageconcepts.com/courses</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://lms.mirrorageconcepts.com/instructor_register.php</loc>
+    <loc>https://lms.mirrorageconcepts.com/instructor_register</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

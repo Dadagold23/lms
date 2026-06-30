@@ -3,7 +3,7 @@
 #  Domain: lms.mirrorageconcepts.com
 # ============================================================
 
-Options -Indexes
+Options -Indexes -MultiViews
 ServerSignature Off
 
 # ── Custom Error Pages ────────────────────────────────────────
@@ -16,15 +16,15 @@ ErrorDocument 500 /500.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Only redirect HTTP → HTTPS on the live domain
+    # Only redirect HTTP → HTTPS on the live domain (preserves query string)
     RewriteCond %{HTTPS} off
     RewriteCond %{HTTP_HOST} !^localhost [NC]
     RewriteCond %{HTTP_HOST} !^127\.0\.0\.1 [NC]
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [QSA,R=301,L]
 
-    # Redirect www → non-www (lms subdomain — keep as-is)
+    # Redirect www → non-www (preserves query string)
     RewriteCond %{HTTP_HOST} ^www\.lms\.mirrorageconcepts\.com$ [NC]
-    RewriteRule ^ https://lms.mirrorageconcepts.com%{REQUEST_URI} [R=301,L]
+    RewriteRule ^ https://lms.mirrorageconcepts.com%{REQUEST_URI} [QSA,R=301,L]
 
     # ── Clean URL: /course/{slug} → course.php?slug={slug} ────────
     # Must come AFTER real-file check so existing .php files still work
@@ -32,11 +32,20 @@ ErrorDocument 500 /500.php
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^course/([a-z0-9][a-z0-9\-]*)/?$ course.php?slug=$1 [QSA,L]
 
+    # ── Redirect trailing slash for clean URLs to avoid asset breaks ──
+    RewriteRule ^(register|login|dashboard|courses|instructor_register|instructor_login)/$ $1 [R=301,L]
+
     # ── Short aliases for static public pages ─────────────────────
-    RewriteRule ^about/?$   about_us.php   [QSA,L]
-    RewriteRule ^faqs/?$    faqs.php       [QSA,L]
-    RewriteRule ^help/?$    help.php       [QSA,L]
-    RewriteRule ^contact/?$ contact_us.php [QSA,L]
+    RewriteRule ^about/?$             about_us.php            [QSA,L]
+    RewriteRule ^faqs/?$              faqs.php                [QSA,L]
+    RewriteRule ^help/?$              help.php                [QSA,L]
+    RewriteRule ^contact/?$           contact_us.php          [QSA,L]
+    RewriteRule ^register$            register.php            [QSA,L]
+    RewriteRule ^login$               login.php               [QSA,L]
+    RewriteRule ^dashboard$           dashboard.php           [QSA,L]
+    RewriteRule ^courses$             courses.php             [QSA,L]
+    RewriteRule ^instructor_register$ instructor_register.php [QSA,L]
+    RewriteRule ^instructor_login$    instructor_login.php    [QSA,L]
 </IfModule>
 
 # ── Security: Block sensitive files ──────────────────────────

@@ -606,7 +606,7 @@ stateSelect.addEventListener('change', async () => {
   await loadLgas(stateId);
 });
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function initProfileGeo() {
   const selectedNatIso2 = natSelect.dataset.selectedIso2 || '';
   const selectedCountryIso2 = countrySelect.dataset.selectedIso2 || '';
   const selectedStateId = stateSelect.dataset.selectedId || '';
@@ -624,7 +624,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (selectedStateId) {
     await loadLgas(selectedStateId, selectedLgaName);
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initProfileGeo);
+} else {
+  initProfileGeo();
+}
 </script>
 
 </body>

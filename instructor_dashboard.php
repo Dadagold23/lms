@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
-if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/helpers.php';
+startSecureSession();
+require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/config/db.php';
 
 requireInstructorLogin();
@@ -90,6 +90,7 @@ require_once __DIR__ . '/includes/seo.php';
     <a href="instructor_lessons.php" class="nav-link"><i class="fa fa-file-alt"></i> Lessons</a>
     <a href="instructor_videos.php" class="nav-link"><i class="fa fa-video"></i> Videos</a>
     <a href="instructor_assignments.php" class="nav-link"><i class="fa fa-tasks"></i> Assignments</a>
+    <a href="instructor_tutor_guide.php?type=normal" class="nav-link"><i class="fa fa-chalkboard-teacher"></i> Lecture Guide</a>
     <div class="nav-section">Upload</div>
     <a href="instructor_upload_course.php" class="nav-link"><i class="fa fa-plus-circle"></i> New Course</a>
     <a href="instructor_upload_lesson.php" class="nav-link"><i class="fa fa-plus-circle"></i> New Lesson</a>
@@ -106,6 +107,7 @@ require_once __DIR__ . '/includes/seo.php';
     <a href="instructor_grade_assignment.php" class="nav-link"><i class="fa fa-star"></i> Grade Submissions</a>
     <div class="nav-section">Affiliate</div>
     <a href="#sowSection" class="nav-link" onclick="document.getElementById('sowSection').scrollIntoView({behavior:'smooth'});return false;"><i class="fa fa-book-open"></i> Scheme of Work</a>
+    <a href="instructor_tutor_guide.php" class="nav-link"><i class="fa fa-chalkboard-teacher"></i> Lesson Guide</a>
     <div class="nav-section">Settings</div>
     <a href="instructor_profile.php" class="nav-link"><i class="fa fa-user-cog"></i> Profile Settings</a>
     <div class="nav-section">Portal</div>
@@ -162,6 +164,8 @@ require_once __DIR__ . '/includes/seo.php';
         <a href="instructor_upload_lesson.php" class="btn-outline-brand"><i class="fa fa-plus"></i> New Lesson</a>
         <a href="instructor_upload_video.php" class="btn-outline-brand"><i class="fa fa-plus"></i> New Video</a>
         <a href="instructor_upload_assignment.php" class="btn-outline-brand"><i class="fa fa-plus"></i> New Assignment</a>
+        <a href="instructor_tutor_guide.php" class="btn-outline-brand"><i class="fa fa-chalkboard-teacher"></i> Lesson Guide</a>
+        <a href="instructor_tutor_guide.php?type=normal" class="btn-outline-brand"><i class="fa fa-chalkboard-teacher"></i> Lecture Guide</a>
         <a href="instructor_grade_assignment.php" class="btn-ghost"><i class="fa fa-star"></i> Grade Submissions</a>
       </div>
     </div>
@@ -249,9 +253,14 @@ require_once __DIR__ . '/includes/seo.php';
     <div class="lms-card mb-4" id="sowSection">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="section-title mb-0"><i class="fa fa-book-open me-2" style="color:var(--brand)"></i>Affiliate Scheme of Work</div>
-        <button id="sowPrintBtn" class="btn-ghost" style="font-size:.82rem;display:none;" onclick="printSOW()">
-          <i class="fa fa-print me-1"></i> Print
-        </button>
+        <div class="d-flex gap-2">
+          <a id="sowGuideBtn" class="btn-ghost text-decoration-none" style="font-size:.82rem;display:none;align-items:center;" target="_blank" href="#">
+            <i class="fa fa-chalkboard-teacher me-1"></i> Tutor Guide
+          </a>
+          <button id="sowPrintBtn" class="btn-ghost" style="font-size:.82rem;display:none;" onclick="printSOW()">
+            <i class="fa fa-print me-1"></i> Print
+          </button>
+        </div>
       </div>
       <p style="font-size:.85rem;color:var(--muted)" class="mb-3">Load and view the scheme of work for any affiliate course, class level, and term.</p>
 
@@ -319,6 +328,7 @@ function loadSOW() {
   const term       = document.getElementById('sowTerm').value;
   const result     = document.getElementById('sowResult');
   const printBtn   = document.getElementById('sowPrintBtn');
+  const guideBtn   = document.getElementById('sowGuideBtn');
 
   if (!courseId || !classLevel || !term) {
     result.innerHTML = '<div class="lms-alert lms-alert-warning"><i class="fa fa-exclamation-triangle me-2"></i>Please select all three filters.</div>';
@@ -327,6 +337,7 @@ function loadSOW() {
 
   result.innerHTML = '<div class="text-center py-4"><i class="fa fa-spinner fa-spin fa-2x" style="color:var(--brand)"></i><br><span style="font-size:.85rem;color:var(--muted)">Loading scheme...</span></div>';
   printBtn.style.display = 'none';
+  guideBtn.style.display = 'none';
 
   fetch(`ajax_affiliate_scheme.php?course_id=${encodeURIComponent(courseId)}&class_level=${encodeURIComponent(classLevel)}&term=${encodeURIComponent(term)}`)
     .then(r => r.json())
@@ -380,6 +391,8 @@ function loadSOW() {
       html += '</tbody></table></div>';
       result.innerHTML = html;
       printBtn.style.display = 'inline-flex';
+      guideBtn.href = `instructor_tutor_guide.php?course_id=${encodeURIComponent(courseId)}`;
+      guideBtn.style.display = 'inline-flex';
     })
     .catch(() => {
       result.innerHTML = '<div class="lms-alert lms-alert-danger">Request failed. Check your connection.</div>';

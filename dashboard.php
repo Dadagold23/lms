@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
-if (session_status() === PHP_SESSION_NONE) session_start();
-require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/helpers.php';
+startSecureSession();
+require_once __DIR__ . '/includes/guard.php';
 require_once __DIR__ . '/includes/enrollment_access.php';
 require_once __DIR__ . '/includes/student_notifications.php';
 require_once __DIR__ . '/includes/workspaces.php';
@@ -721,7 +721,7 @@ initAccordion('availToggle',     'availList');
               <!-- Unique QR Code from API -->
               <?php
                 $refToken = $affiliatePartner['referral_token'] ?? '';
-                $regLink = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/lms/register.php?ref_token=' . $refToken;
+                $regLink = appAbsoluteUrl('register.php?ref_token=' . $refToken);
               ?>
               <img id="card_qr" src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&color=0d9488&data=<?= urlencode($regLink) ?>" alt="QR Link" class="img-fluid rounded border p-1" style="background:#fff; width: 110px; height: 110px;">
               <div class="mt-2 text-info fw-mono fw-bold" id="card_token" style="font-size: 0.7rem; letter-spacing: 1px;">REF-<?= strtoupper(substr($refToken, 0, 8)) ?></div>
@@ -766,7 +766,7 @@ initAccordion('availToggle',     'availList');
                 <div class="small text-dark mb-1 fw-bold" style="font-size: 0.55rem; letter-spacing: 0.5px;">SECURITY AUTOLOGIN CODE</div>
                 <?php
                   $autologinToken = $student['autologin_token'] ?? '';
-                  $autologinUrl = 'http://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/lms/autologin.php?token=' . $autologinToken;
+                  $autologinUrl = appAbsoluteUrl('autologin.php?token=' . $autologinToken);
                 ?>
                 <img id="card_barcode" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&color=0f172a&data=<?= urlencode($autologinUrl) ?>" alt="Security QR Code" class="img-fluid rounded border p-1" style="background:#fff; width: 90px; height: 90px; object-fit: contain;">
                 <div class="text-muted mt-1 fw-mono" id="card_barcode_text" style="font-size: 0.55rem;">*SYS-LOGIN-<?= strtoupper(substr($autologinToken, 0, 12)) ?>*</div>

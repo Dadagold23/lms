@@ -737,7 +737,7 @@ function showReferralIdCard(refData) {
   }
   
   // Generate registration link
-  const regLink = `${window.location.protocol}//${window.location.host}/lms/register.php?ref_token=${refData.referral_token}`;
+  const regLink = <?= json_encode(appAbsoluteUrl('register.php')) ?> + `?ref_token=${refData.referral_token}`;
   
   // Populate ID card modal
   document.getElementById('card_initials').textContent = initials || 'ST';
@@ -771,7 +771,7 @@ function showReferralIdCard(refData) {
   const cardBarcode = document.getElementById('card_barcode');
   const cardBarcodeText = document.getElementById('card_barcode_text');
   if (refData.autologin_token) {
-    const autologinUrl = `${window.location.protocol}//${window.location.host}/lms/autologin.php?token=${refData.autologin_token}`;
+    const autologinUrl = <?= json_encode(appAbsoluteUrl('autologin.php')) ?> + `?token=${refData.autologin_token}`;
     cardBarcode.src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&color=0f172a&data=${encodeURIComponent(autologinUrl)}`;
     cardBarcodeText.textContent = `*SYS-LOGIN-${refData.autologin_token.substring(0, 12).toUpperCase()}*`;
   }

@@ -47,6 +47,10 @@ function isHttpsRequest(): bool
 
 function startSecureSession(): void
 {
+    if (PHP_SAPI === 'cli') {
+        return;
+    }
+
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
@@ -151,7 +155,7 @@ function isPost(): bool
 function csrfToken(): string
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
+        startSecureSession();
     }
 
     if (empty($_SESSION['_csrf'])) {
@@ -163,7 +167,7 @@ function csrfToken(): string
 function verifyCsrf($token): void
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
+        startSecureSession();
     }
 
     $t = (string)$token;

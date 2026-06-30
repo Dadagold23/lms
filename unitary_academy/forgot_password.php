@@ -43,9 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmtUpdate->execute([$token, $expires, (int)$partner['id']]);
 
                 // Construct reset link
-                $httpProtocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
-                $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-                $resetLink = "{$httpProtocol}://{$host}/lms/unitary_academy/reset_password.php?token={$token}";
+                $resetLink = appAbsoluteUrl('unitary_academy/reset_password.php?token=' . $token);
 
                 // Send email
                 $subject = "Password Reset Request — Grafix@Mirror Partner Portal";
