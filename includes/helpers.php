@@ -132,6 +132,16 @@ function appAbsoluteUrl(string $path = ''): string
         // Strip out public suffix if present to match lms root structure
         $envUrl = str_replace('/public/', '/', $envUrl);
         $envUrl = str_replace('/public', '', $envUrl);
+        
+        // Dynamically replace localhost with actual requested host (e.g. local IP 192.168.x.x or tunnel)
+        // so that QR codes scanned by mobile devices resolve to the correct server IP/domain.
+        $reqHost = $_SERVER['HTTP_HOST'] ?? '';
+        if ($reqHost !== '' && $reqHost !== 'localhost') {
+            if (stripos($envUrl, '://localhost') !== false) {
+                $envUrl = str_ireplace('://localhost', '://' . $reqHost, $envUrl);
+            }
+        }
+        
         return rtrim($envUrl, '/') . '/' . ltrim($path, '/');
     }
 

@@ -97,9 +97,14 @@ require_once __DIR__ . '/includes/seo.php';
 
 <nav class="lms-nav lms-nav-admin">
   <div class="container-fluid px-4 d-flex align-items-center justify-content-between">
-    <div class="brand">
-      <div style="width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.9rem">A</div>
-      <span style="color:#fff">Admin <span style="color:#a5b4fc">Panel</span></span>
+    <div class="d-flex align-items-center gap-3">
+      <button id="sidebarToggle" class="btn-ghost d-md-none" style="padding:.4rem .7rem; color:#fff;" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+      <div class="brand">
+        <div style="width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.9rem">A</div>
+        <span style="color:#fff">Admin <span style="color:#a5b4fc">Panel</span></span>
+      </div>
     </div>
     <div class="d-flex align-items-center gap-3">
       <span style="font-size:.82rem;color:#94a3b8">
@@ -114,7 +119,7 @@ require_once __DIR__ . '/includes/seo.php';
 <div class="lms-layout">
 
   <!-- SIDEBAR -->
-  <aside class="lms-sidebar">
+  <aside class="lms-sidebar" id="sidebar">
     <div class="nav-section">Overview</div>
     <a href="admin_dashboard.php" class="nav-link"><i class="fa fa-th-large"></i> Dashboard</a>
     <a href="analytics.php" class="nav-link"><i class="fa fa-chart-bar"></i> Analytics</a>
@@ -230,5 +235,10 @@ function checkStrength(val) {
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+</script>
 </body>
 </html>

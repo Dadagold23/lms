@@ -244,11 +244,16 @@ require_once __DIR__ . '/includes/seo.php';
 
 <nav class="lms-nav lms-nav-instructor py-2 shadow-sm">
   <div class="container-fluid px-4 d-flex align-items-center justify-content-between">
-    <div class="brand">
-      <a href="instructor_dashboard.php" class="d-flex align-items-center gap-2 text-decoration-none">
-        <div style="width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.9rem">I</div>
-        <span style="color:#fff" class="fw-bold">Instructor <span style="color:#c7d2fe">Portal</span></span>
-      </a>
+    <div class="d-flex align-items-center gap-3">
+      <button id="sidebarToggle" class="btn-ghost d-md-none" style="padding:.4rem .7rem; color:#fff;" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+      <div class="brand">
+        <a href="instructor_dashboard.php" class="d-flex align-items-center gap-2 text-decoration-none">
+          <div style="width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:.9rem">I</div>
+          <span style="color:#fff" class="fw-bold">Instructor <span style="color:#c7d2fe">Portal</span></span>
+        </a>
+      </div>
     </div>
     <div class="d-flex align-items-center gap-3">
       <span style="font-size:.82rem;color:rgba(255,255,255,.7)">
@@ -262,7 +267,7 @@ require_once __DIR__ . '/includes/seo.php';
 <div class="lms-layout">
 
   <!-- SIDEBAR -->
-  <aside class="lms-sidebar">
+  <aside class="lms-sidebar" id="sidebar">
     <div class="nav-section">Overview</div>
     <a href="instructor_dashboard.php" class="nav-link"><i class="fa fa-th-large"></i> Dashboard</a>
     <div class="nav-section">Content</div>
@@ -457,6 +462,11 @@ require_once __DIR__ . '/includes/seo.php';
       confirmButtonColor: '#ef4444'
     });
   <?php endif; ?>
+</script>
+<script>
+document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
 </script>
 </body>
 </html>

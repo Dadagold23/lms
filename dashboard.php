@@ -651,10 +651,10 @@ initAccordion('availToggle',     'availList');
       </div>
       <div class="modal-body p-4 text-center">
         <!-- Stacked ID Card (Front & Back) -->
-        <div id="studentIdCard" class="mx-auto" style="width: 320px; display: flex; flex-direction: column; gap: 20px;">
+        <div id="studentIdCard" class="mx-auto" style="width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 20px;">
           
           <!-- FRONT SIDE -->
-          <div class="card-front p-4 position-relative shadow rounded-4 overflow-hidden text-start" style="width: 320px; min-height: 380px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border: 2px solid #0d9488; font-family: 'Inter', sans-serif; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+          <div class="card-front p-4 position-relative shadow rounded-4 overflow-hidden text-start" style="width: 100%; max-width: 320px; min-height: 380px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #fff; border: 2px solid #0d9488; font-family: 'Inter', sans-serif; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
               <!-- Card Header -->
               <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3 mb-3">
@@ -729,7 +729,7 @@ initAccordion('availToggle',     'availList');
           </div>
           
           <!-- BACK SIDE -->
-          <div class="card-back p-4 position-relative shadow rounded-4 overflow-hidden text-start" style="width: 320px; min-height: 380px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; border: 2px solid #0d9488; font-family: 'Inter', sans-serif; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+          <div class="card-back p-4 position-relative shadow rounded-4 overflow-hidden text-start" style="width: 100%; max-width: 320px; min-height: 380px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; border: 2px solid #0d9488; font-family: 'Inter', sans-serif; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
               <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-2 mb-3">
                 <span class="fw-bold text-info" style="font-size: 0.8rem; letter-spacing: 1px;">CARD ACCESS & TERMS</span>
@@ -759,9 +759,7 @@ initAccordion('availToggle',     'availList');
                 </div>
               </div>
               
-              <!-- Security Barcode -->
-              <div class="text-center bg-white p-2 rounded">
-              <!-- Security Autologin Code -->
+              <!-- Security Barcode / Autologin Code -->
               <div class="text-center bg-white p-2 rounded">
                 <div class="small text-dark mb-1 fw-bold" style="font-size: 0.55rem; letter-spacing: 0.5px;">SECURITY AUTOLOGIN CODE</div>
                 <?php
