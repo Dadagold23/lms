@@ -36,31 +36,7 @@ require_once __DIR__ . '/includes/seo.php';
   <div class="error-panel">
     
     <!-- SVG illustration -->
-    <svg class="svg-float mb-4" width="180" height="180" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="250" cy="250" r="180" fill="#f59e0b" fill-opacity="0.1" class="svg-glow"/>
-      
-      <!-- Big Gear -->
-      <g class="svg-float">
-        <circle cx="200" cy="200" r="60" fill="none" stroke="#f59e0b" stroke-width="12" />
-        <circle cx="200" cy="200" r="20" fill="none" stroke="#f59e0b" stroke-width="8" />
-        <!-- Teeth -->
-        <path d="M200,120 L200,140 M200,260 L200,280 M120,200 L140,200 M260,200 L280,200 M143,143 L157,157 M243,243 L257,257 M143,257 L157,243 M243,143 L257,157" stroke="#f59e0b" stroke-width="12" stroke-linecap="round" />
-      </g>
-      
-      <!-- Small Gear -->
-      <g class="svg-float" style="animation-delay: -3s;">
-        <circle cx="310" cy="290" r="40" fill="none" stroke="#eab308" stroke-width="10" />
-        <circle cx="310" cy="290" r="12" fill="none" stroke="#eab308" stroke-width="6" />
-        <!-- Teeth -->
-        <path d="M310,235 L310,250 M310,330 L310,345 M255,290 L270,290 M350,290 L365,290 M271,251 L282,262 M338,318 L349,329 M271,329 L282,318 M338,262 L349,251" stroke="#eab308" stroke-width="10" stroke-linecap="round" />
-      </g>
-      
-      <!-- Warning exclamation mark inside small shield -->
-      <g transform="translate(370, 160)" class="svg-float" style="animation-delay: -1.5s;">
-        <polygon points="0,-25 22,15 -22,15" fill="#ef4444" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" />
-        <text x="0" y="8" font-family="sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle">!</text>
-      </g>
-    </svg>
+    <img src="assets/img/error-500.svg" alt="Server Error Illustration" class="img-fluid svg-float mb-4" style="max-width: 180px;">
 
     <div class="error-code" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">500</div>
     <h1 class="error-title">Internal Server Error</h1>

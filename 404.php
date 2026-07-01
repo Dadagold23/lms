@@ -36,25 +36,7 @@ require_once __DIR__ . '/includes/seo.php';
   <div class="error-panel">
     
     <!-- SVG illustration -->
-    <svg class="svg-float mb-4" width="180" height="180" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="250" cy="250" r="180" fill="#4f46e5" fill-opacity="0.1" class="svg-glow"/>
-      
-      <!-- Magnifying Glass -->
-      <circle cx="210" cy="210" r="80" stroke="#4f46e5" stroke-width="8" fill="none" />
-      <line x1="266" y1="266" x2="370" y2="370" stroke="#4f46e5" stroke-width="12" stroke-linecap="round" />
-      
-      <!-- Tiny space debris / stars -->
-      <circle cx="100" cy="120" r="4" fill="#38bdf8" />
-      <circle cx="380" cy="150" r="6" fill="#a855f7" />
-      <circle cx="340" cy="280" r="3" fill="#6366f1" />
-      <circle cx="120" cy="320" r="5" fill="#eab308" />
-      
-      <!-- Lost page -->
-      <g class="svg-float" style="animation-delay: -3s;">
-        <rect x="175" y="165" width="70" height="90" rx="10" fill="#1e1b4b" stroke="#6366f1" stroke-width="3" />
-        <text x="210" y="222" font-family="'Inter', sans-serif" font-size="44" font-weight="900" fill="#a5b4fc" text-anchor="middle">?</text>
-      </g>
-    </svg>
+    <img src="assets/img/error-404.svg" alt="Not Found Error Illustration" class="img-fluid svg-float mb-4" style="max-width: 180px;">
 
     <div class="error-code">404</div>
     <h1 class="error-title">Page Not Found</h1>

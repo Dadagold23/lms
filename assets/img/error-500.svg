@@ -1,0 +1,49 @@
+<svg width="200" height="200" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bgGlow500" x1="250" y1="50" x2="250" y2="450" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#b45309" stop-opacity="0.02"/>
+    </linearGradient>
+    <linearGradient id="gearGrad" x1="160" y1="160" x2="340" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="wrenchGrad" x1="100" y1="360" x2="360" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#475569"/>
+    </linearGradient>
+    
+    <!-- Shadows & Glows -->
+    <filter id="gearShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#f59e0b" flood-opacity="0.3"/>
+    </filter>
+    <filter id="lightningGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Ambient amber glow -->
+  <circle cx="250" cy="250" r="180" fill="url(#bgGlow500)"/>
+
+  <!-- Rotating Gear (Server Mechanics) -->
+  <g filter="url(#gearShadow)" style="transform-origin: 250px 250px;">
+    <!-- Gear teeth -->
+    <path d="M250,90 L270,90 L275,120 L295,125 L315,105 L330,120 L320,140 L335,155 L360,150 L370,170 L350,185 L358,205 L385,210 L385,230 L358,235 L350,255 L370,270 L360,290 L335,285 L320,300 L330,320 L315,335 L295,315 L275,320 L270,350 L250,350 L245,320 L225,315 L205,335 L190,320 L200,300 L185,285 L160,290 L150,270 L170,255 L162,235 L135,230 L135,210 L162,205 L170,185 L150,170 L160,150 L185,155 L200,140 L190,120 L205,105 L225,125 L245,120 Z" fill="url(#gearGrad)" stroke="#d97706" stroke-width="4"/>
+    <circle cx="250" cy="250" r="65" fill="#1e1b4b" stroke="#d97706" stroke-width="4"/>
+  </g>
+
+  <!-- Crisscrossed Wrench/Spanner (Troubleshooting) -->
+  <g filter="url(#gearShadow)" style="transform: rotate(15deg); transform-origin: 250px 250px;">
+    <path d="M120,340 L340,120 C350,110 370,110 380,120 C390,130 390,150 380,160 L160,380 C150,390 130,390 120,380 C110,370 110,350 120,340 Z" fill="url(#wrenchGrad)" stroke="#475569" stroke-width="2"/>
+    <!-- Wrench Head Openings -->
+    <path d="M375,115 L355,135 M385,125 L365,145" stroke="#1e1b4b" stroke-width="8" stroke-linecap="round" />
+    <path d="M125,365 L145,345 M115,355 L135,335" stroke="#1e1b4b" stroke-width="8" stroke-linecap="round" />
+  </g>
+
+  <!-- Glowing Lightning Bolt (System Crash/Electricity) -->
+  <g filter="url(#lightningGlow)">
+    <path d="M270,130 L180,260 L240,260 L210,380 L320,230 L260,230 Z" fill="#f59e0b" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" />
+  </g>
+</svg>

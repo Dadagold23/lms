@@ -36,20 +36,7 @@ require_once __DIR__ . '/includes/seo.php';
   <div class="error-panel">
     
     <!-- SVG illustration -->
-    <svg class="svg-float mb-4" width="180" height="180" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="250" cy="250" r="180" fill="#ef4444" fill-opacity="0.1" class="svg-glow"/>
-      
-      <!-- Shield -->
-      <path d="M250,90 L370,130 L370,260 C370,350 250,410 250,410 C250,410 130,350 130,260 L130,130 Z" fill="#1e1b4b" stroke="#ef4444" stroke-width="8" stroke-linejoin="round" />
-      
-      <!-- Lock Body -->
-      <rect x="200" y="220" width="100" height="80" rx="14" fill="#ef4444" />
-      <!-- Lock Shackle -->
-      <path d="M220,220 L220,185 C220,165 233,150 250,150 C267,150 280,165 280,185 L280,220" fill="none" stroke="#ef4444" stroke-width="8" />
-      <!-- Keyhole -->
-      <circle cx="250" cy="255" r="8" fill="#1e1b4b" />
-      <path d="M247,255 L253,255 L256,280 L244,280 Z" fill="#1e1b4b" />
-    </svg>
+    <img src="assets/img/error-403.svg" alt="Forbidden Error Illustration" class="img-fluid svg-float mb-4" style="max-width: 180px;">
 
     <div class="error-code" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">403</div>
     <h1 class="error-title">Access Forbidden</h1>
